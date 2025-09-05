@@ -219,7 +219,6 @@ void main() {
         // Multiple accesses should return the same instance
         expect(app.appConfiguration, same(app.appConfiguration));
       });
-    });
 
       testWidgets('should not cause memory leaks', (WidgetTester tester) async {
         // Test multiple create/dispose cycles

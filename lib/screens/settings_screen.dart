@@ -342,43 +342,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Scan Interval'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('How often should the app scan for devices?'),
-            const SizedBox(height: 16),
-            DropdownButton<int>(
-              value: currentInterval,
-              isExpanded: true,
-              items: [15, 30, 60, 120, 300].map((seconds) {
-                final String label = seconds < 60
-                    ? '$seconds seconds'
-                    : '${seconds ~/ 60} minute${seconds ~/ 60 > 1 ? 's' : ''}';
-                return DropdownMenuItem(value: seconds, child: Text(label));
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  currentInterval = value;
-                }
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Scan Interval'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How often should the app scan for devices?'),
+              const SizedBox(height: 16),
+              DropdownButton<int>(
+                value: currentInterval,
+                isExpanded: true,
+                items: [15, 30, 60, 120, 300].map((seconds) {
+                  final String label = seconds < 60
+                      ? '$seconds seconds'
+                      : '${seconds ~/ 60} minute${seconds ~/ 60 > 1 ? 's' : ''}';
+                  return DropdownMenuItem(value: seconds, child: Text(label));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      currentInterval = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _settingsService.updateScanInterval(currentInterval);
+                Navigator.of(context).pop();
               },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              _settingsService.updateScanInterval(currentInterval);
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -388,42 +392,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Battery Threshold'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Stop scanning when battery level drops below:'),
-            const SizedBox(height: 16),
-            DropdownButton<int>(
-              value: currentThreshold,
-              isExpanded: true,
-              items: [5, 10, 15, 20, 25, 30].map((percent) {
-                return DropdownMenuItem(
-                    value: percent, child: Text('$percent%'));
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  currentThreshold = value;
-                }
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Battery Threshold'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Stop scanning when battery level drops below:'),
+              const SizedBox(height: 16),
+              DropdownButton<int>(
+                value: currentThreshold,
+                isExpanded: true,
+                items: [5, 10, 15, 20, 25, 30].map((percent) {
+                  return DropdownMenuItem(
+                      value: percent, child: Text('$percent%'));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      currentThreshold = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _settingsService.updateBatteryOptimization(
+                    true, currentThreshold);
+                Navigator.of(context).pop();
               },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              _settingsService.updateBatteryOptimization(
-                  true, currentThreshold);
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -433,45 +441,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Data Retention'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('How long should device data be kept?'),
-            const SizedBox(height: 16),
-            DropdownButton<int>(
-              value: currentRetention,
-              isExpanded: true,
-              items: [7, 14, 30, 60, 90, 180, 365].map((days) {
-                final String label = days < 30
-                    ? '$days days'
-                    : days < 365
-                        ? '${days ~/ 30} month${days ~/ 30 > 1 ? 's' : ''}'
-                        : '1 year';
-                return DropdownMenuItem(value: days, child: Text(label));
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  currentRetention = value;
-                }
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Data Retention'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How long should device data be kept?'),
+              const SizedBox(height: 16),
+              DropdownButton<int>(
+                value: currentRetention,
+                isExpanded: true,
+                items: [7, 14, 30, 60, 90, 180, 365].map((days) {
+                  final String label = days < 30
+                      ? '$days days'
+                      : days < 365
+                          ? '${days ~/ 30} month${days ~/ 30 > 1 ? 's' : ''}'
+                          : '1 year';
+                  return DropdownMenuItem(value: days, child: Text(label));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      currentRetention = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _settingsService.updateDataRetention(currentRetention);
+                Navigator.of(context).pop();
               },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              _settingsService.updateDataRetention(currentRetention);
-              Navigator.of(context).pop();
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }

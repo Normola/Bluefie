@@ -23,6 +23,7 @@ class BluetoothScanningService {
   StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
   StreamSubscription<bool>? _isScanningSubscription;
   StreamSubscription<bool>? _lowBatterySubscription;
+  StreamSubscription<bool>? _chargingStateSubscription;
   Timer? _continuousScanTimer;
   
   bool _isServiceRunning = false;
@@ -38,6 +39,17 @@ class BluetoothScanningService {
   
   bool get isServiceRunning => _isServiceRunning;
   bool get isScanning => _isScanning;
+
+  Future<void> initialize() async {
+    // Set up global charging state monitoring for auto-scan when plugged in
+    _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+      final settings = _settingsService.currentSettings;
+      if (settings.autoScanWhenPluggedIn && isCharging && !_isServiceRunning) {
+        log.info('Device plugged in - automatically starting scanning');
+        startContinuousScanning();
+      }
+    });
+  }
 
   Future<bool> startContinuousScanning() async {
     if (_isServiceRunning) {
@@ -81,6 +93,15 @@ class BluetoothScanningService {
         if (isLowBattery && _isServiceRunning) {
           log.warning('Low battery detected - stopping continuous scanning');
           stopContinuousScanning();
+        }
+      });
+
+      // Set up charging state listener for auto-scan when plugged in
+      _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+        final settings = _settingsService.currentSettings;
+        if (settings.autoScanWhenPluggedIn && isCharging && !_isServiceRunning) {
+          log.info('Device plugged in - automatically starting scanning');
+          startContinuousScanning();
         }
       });
 
@@ -226,6 +247,7 @@ class BluetoothScanningService {
       _scanResultsSubscription?.cancel();
       _isScanningSubscription?.cancel();
       _lowBatterySubscription?.cancel();
+      _chargingStateSubscription?.cancel();
 
       // Stop location tracking
       _locationService.stopLocationTracking();

@@ -7,6 +7,7 @@ class AppSettings {
   final bool locationTrackingEnabled;
   final bool verboseLoggingEnabled;
   final bool showNotifications;
+  final bool autoScanWhenPluggedIn;
 
   const AppSettings({
     this.autoScanningEnabled = false,
@@ -17,6 +18,7 @@ class AppSettings {
     this.locationTrackingEnabled = true,
     this.verboseLoggingEnabled = false,
     this.showNotifications = true,
+    this.autoScanWhenPluggedIn = false,
   });
 
   AppSettings copyWith({
@@ -28,6 +30,7 @@ class AppSettings {
     bool? locationTrackingEnabled,
     bool? verboseLoggingEnabled,
     bool? showNotifications,
+    bool? autoScanWhenPluggedIn,
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
@@ -38,6 +41,7 @@ class AppSettings {
       locationTrackingEnabled: locationTrackingEnabled ?? this.locationTrackingEnabled,
       verboseLoggingEnabled: verboseLoggingEnabled ?? this.verboseLoggingEnabled,
       showNotifications: showNotifications ?? this.showNotifications,
+      autoScanWhenPluggedIn: autoScanWhenPluggedIn ?? this.autoScanWhenPluggedIn,
     );
   }
 
@@ -51,6 +55,7 @@ class AppSettings {
       'locationTrackingEnabled': locationTrackingEnabled,
       'verboseLoggingEnabled': verboseLoggingEnabled,
       'showNotifications': showNotifications,
+      'autoScanWhenPluggedIn': autoScanWhenPluggedIn,
     };
   }
 
@@ -64,6 +69,7 @@ class AppSettings {
       locationTrackingEnabled: json['locationTrackingEnabled'] ?? true,
       verboseLoggingEnabled: json['verboseLoggingEnabled'] ?? false,
       showNotifications: json['showNotifications'] ?? true,
+      autoScanWhenPluggedIn: json['autoScanWhenPluggedIn'] ?? false,
     );
   }
 

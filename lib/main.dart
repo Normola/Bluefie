@@ -11,6 +11,7 @@ import 'screens/bluetooth_off_screen.dart';
 import 'screens/scan_screen.dart';
 import 'services/settings_service.dart';
 import 'services/battery_service.dart';
+import 'services/bluetooth_scanning_service.dart';
 import 'services/logging_service.dart';
 
 void main() async {
@@ -23,6 +24,7 @@ void main() async {
   // Initialize services
   await SettingsService().initialize();
   await BatteryService().initialize();
+  await BluetoothScanningService().initialize();
   
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
   log.info('✅ All services initialized successfully');

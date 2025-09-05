@@ -43,6 +43,30 @@ class LocationService {
       return false;
     }
 
+    // For Android 12+ devices, check if we have precise location access
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      try {
+        // Try to get a test location to verify we have precise location access
+        final testPosition = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.best,
+            timeLimit: Duration(seconds: 5),
+          ),
+        );
+        
+        // Log the precision we're getting
+        log.info('Location precision check: accuracy = ${testPosition.accuracy}m');
+        
+        // If accuracy is very poor (>1000m), user might have selected "approximate location"
+        if (testPosition.accuracy > 1000) {
+          log.warning('Location accuracy is poor (${testPosition.accuracy}m). User may have selected approximate location.');
+        }
+        
+      } catch (e) {
+        log.warning('Could not verify location precision: $e');
+      }
+    }
+
     return true;
   }
 
@@ -53,13 +77,16 @@ class LocationService {
       }
 
       const LocationSettings locationSettings = LocationSettings(
-        accuracy: LocationAccuracy.high,
+        accuracy: LocationAccuracy.best, // Changed from high to best for maximum precision
         timeLimit: ScanConfig.locationTimeout,
       );
 
       _currentPosition = await Geolocator.getCurrentPosition(
         locationSettings: locationSettings,
       );
+      
+      // Log location accuracy for debugging
+      log.info('Location obtained with accuracy: ${_currentPosition?.accuracy ?? 'unknown'} meters');
       
       _locationController.add(_currentPosition);
       return _currentPosition;
@@ -75,7 +102,7 @@ class LocationService {
     }
 
     final LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
+      accuracy: LocationAccuracy.best, // Changed from high to best for maximum precision
       distanceFilter: ScanConfig.minLocationUpdateDistance.round(),
       timeLimit: ScanConfig.locationTimeout,
     );
@@ -85,6 +112,10 @@ class LocationService {
     ).listen(
       (Position position) {
         _currentPosition = position;
+        
+        // Log location updates with accuracy info
+        log.info('Location updated: ${position.latitude.toStringAsFixed(8)}, ${position.longitude.toStringAsFixed(8)} (accuracy: ${position.accuracy}m)');
+        
         _locationController.add(position);
       },
       onError: (error) {
@@ -115,7 +146,7 @@ class LocationService {
 
   String getLocationString(Position? position) {
     if (position == null) return 'Unknown location';
-    return '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+    return '${position.latitude.toStringAsFixed(8)}, ${position.longitude.toStringAsFixed(8)} (±${position.accuracy.toStringAsFixed(1)}m)';
   }
 
   void dispose() {

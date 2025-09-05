@@ -4,8 +4,8 @@ class ScanConfig {
   static const Duration scanDuration = Duration(seconds: 25);
   
   // Location settings
-  static const double minLocationUpdateDistance = 10.0; // meters
-  static const Duration locationTimeout = Duration(seconds: 10);
+  static const double minLocationUpdateDistance = 5.0; // meters - reduced for more frequent updates
+  static const Duration locationTimeout = Duration(seconds: 15); // increased timeout for better accuracy
   
   // Database settings
   static const int maxRecentDevices = 50;

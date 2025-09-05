@@ -187,6 +187,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             const Divider(),
+            SwitchListTile(
+              title: const Text('Auto Scan When Plugged In'),
+              subtitle: Text(_settings.autoScanWhenPluggedIn 
+                  ? 'Automatically start scanning when device is charging' 
+                  : 'Manual control only'),
+              value: _settings.autoScanWhenPluggedIn,
+              onChanged: (value) async {
+                await _settingsService.updateAutoScanWhenPluggedIn(value);
+              },
+            ),
+            const Divider(),
             ListTile(
               title: const Text('Scan Interval'),
               subtitle: Text('${_settings.scanIntervalSeconds} seconds'),

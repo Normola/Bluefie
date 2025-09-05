@@ -96,6 +96,11 @@ class SettingsService {
     await updateSettings(newSettings);
   }
 
+  Future<void> updateAutoScanWhenPluggedIn(bool enabled) async {
+    final newSettings = _currentSettings.copyWith(autoScanWhenPluggedIn: enabled);
+    await updateSettings(newSettings);
+  }
+
   Future<void> resetToDefaults() async {
     await updateSettings(const AppSettings());
   }

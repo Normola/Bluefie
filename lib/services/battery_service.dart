@@ -22,14 +22,19 @@ class BatteryService {
       StreamController<int>.broadcast();
   final StreamController<bool> _lowBatteryController = 
       StreamController<bool>.broadcast();
+  final StreamController<bool> _chargingStateController = 
+      StreamController<bool>.broadcast();
 
   // Streams for UI updates
   Stream<int> get batteryLevelStream => _batteryLevelController.stream;
   Stream<bool> get lowBatteryStream => _lowBatteryController.stream;
+  Stream<bool> get chargingStateStream => _chargingStateController.stream;
   
   int get currentBatteryLevel => _currentBatteryLevel;
   BatteryState get currentBatteryState => _currentBatteryState;
   bool get isLowBattery => _lowBatteryTriggered;
+  bool get isCharging => _currentBatteryState == BatteryState.charging || 
+                         _currentBatteryState == BatteryState.connectedNotCharging;
 
   Future<void> initialize() async {
     await _updateBatteryLevel();
@@ -39,7 +44,29 @@ class BatteryService {
   void _startBatteryMonitoring() {
     // Monitor battery state changes
     _batteryStateSubscription = _battery.onBatteryStateChanged.listen((state) {
+      final previousState = _currentBatteryState;
       _currentBatteryState = state;
+      
+      // Check if charging state changed
+      final wasCharging = previousState == BatteryState.charging || 
+                         previousState == BatteryState.connectedNotCharging;
+      final isNowCharging = state == BatteryState.charging || 
+                           state == BatteryState.connectedNotCharging;
+      
+      if (wasCharging != isNowCharging) {
+        _chargingStateController.add(isNowCharging);
+        
+        if (isNowCharging) {
+          log.battery('Device plugged in and charging', {
+            'state': state.toString()
+          });
+        } else {
+          log.battery('Device unplugged', {
+            'state': state.toString()
+          });
+        }
+      }
+      
       _checkLowBatteryCondition();
     });
 
@@ -126,5 +153,6 @@ class BatteryService {
     _batteryLevelTimer?.cancel();
     _batteryLevelController.close();
     _lowBatteryController.close();
+    _chargingStateController.close();
   }
 }

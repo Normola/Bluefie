@@ -30,12 +30,14 @@ class _ScanScreenState extends State<ScanScreen> {
   int _storedDeviceCount = 0;
   int _batteryLevel = 100;
   bool _isLowBattery = false;
+  bool _isCharging = false;
   
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
   StreamSubscription<int>? _deviceCountSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<bool>? _lowBatterySubscription;
+  StreamSubscription<bool>? _chargingStateSubscription;
   
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final LocationService _locationService = LocationService();
@@ -93,6 +95,15 @@ class _ScanScreenState extends State<ScanScreen> {
       }
     });
 
+    // Listen to charging state changes
+    _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+      if (mounted) {
+        setState(() {
+          _isCharging = isCharging;
+        });
+      }
+    });
+
     _initializeServices();
   }
 
@@ -107,6 +118,7 @@ class _ScanScreenState extends State<ScanScreen> {
     _storedDeviceCount = await _scanningService.getTotalDeviceCount();
     _batteryLevel = _batteryService.currentBatteryLevel;
     _isLowBattery = _batteryService.isLowBattery;
+    _isCharging = _batteryService.isCharging;
     _continuousScanning = _scanningService.isServiceRunning;
     
     if (mounted) {
@@ -121,6 +133,7 @@ class _ScanScreenState extends State<ScanScreen> {
     _deviceCountSubscription?.cancel();
     _batteryLevelSubscription?.cancel();
     _lowBatterySubscription?.cancel();
+    _chargingStateSubscription?.cancel();
     super.dispose();
   }
 
@@ -255,10 +268,12 @@ class _ScanScreenState extends State<ScanScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
+                          _isCharging ? Icons.battery_charging_full :
                           _batteryLevel > 50 ? Icons.battery_full :
                           _batteryLevel > 20 ? Icons.battery_std :
                           Icons.battery_alert,
-                          color: _isLowBattery ? Colors.red : 
+                          color: _isCharging ? Colors.green :
+                                 _isLowBattery ? Colors.red : 
                                  _batteryLevel > 50 ? Colors.green : Colors.orange,
                           size: 24,
                         ),
@@ -272,7 +287,8 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ],
                     ),
-                    Text(_isLowBattery ? 'Low Battery' : 'Battery'),
+                    Text(_isCharging ? 'Charging' : 
+                         _isLowBattery ? 'Low Battery' : 'Battery'),
                   ],
                 ),
               ],

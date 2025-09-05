@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/bluetooth_device_record.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/location_service.dart';
+import '../services/data_export_service.dart';
 import '../config/scan_config.dart';
 import  '../services/logging_service.dart';
 
@@ -17,6 +18,7 @@ class DeviceHistoryScreen extends StatefulWidget {
 class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerProviderStateMixin {
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final LocationService _locationService = LocationService();
+  final DataExportService _exportService = DataExportService();
   
   late TabController _tabController;
   
@@ -271,6 +273,9 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
           PopupMenuButton<String>(
             onSelected: (value) async {
               switch (value) {
+                case 'export_data':
+                  _showExportDialog();
+                  break;
                 case 'clear_all':
                   _showClearDataDialog();
                   break;
@@ -281,6 +286,16 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'export_data',
+                child: Row(
+                  children: [
+                    Icon(Icons.download),
+                    SizedBox(width: 8),
+                    Text('Export to JSON'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'cleanup_old',
                 child: Text('Clean old data (${ScanConfig.cleanupDataRetentionDays}+ days)'),
@@ -333,5 +348,126 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
         ],
       ),
     );
+  }
+
+  void _showExportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Data'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Export all Bluetooth device data to a JSON file.'),
+            SizedBox(height: 16),
+            Text('The export will include:'),
+            Text('• All device scan records'),
+            Text('• Device statistics'),
+            Text('• App settings'),
+            Text('• System information'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _performDataExport();
+            },
+            child: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performDataExport() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Exporting data...'),
+            ],
+          ),
+        ),
+      );
+
+      // Perform the export
+      String? filePath = await _exportService.exportAllDataToJson();
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (filePath != null) {
+        // Show success dialog with sharing option
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Export Successful'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Data exported successfully!'),
+                  const SizedBox(height: 8),
+                  Text('File: ${filePath.split('/').last}'),
+                  const SizedBox(height: 8),
+                  Text('Location: $filePath'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await _exportService.shareExportedFile(filePath);
+                    } catch (e) {
+                      if (mounted) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Error sharing file: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Share'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        // Show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Export failed')),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export error: $e')),
+        );
+      }
+    }
   }
 }

@@ -7,9 +7,9 @@ plugins {
 
 android {
     namespace = "uk.co.undergroundbunker.blufie_ui"
-    compileSdk rootProject.ext.compileSdkVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    ndkVersion "25.1.8937393"
+    compileSdk 36
+    compileSdkVersion 36
+    ndkVersion "26.1.10909125"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -25,8 +25,8 @@ android {
         applicationId = "uk.co.undergroundbunker.blufie_ui"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdk rootProject.ext.targetSdkVersion
+        minSdkVersion flutter.minSdkVersion
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
     }

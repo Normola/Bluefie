@@ -11,15 +11,22 @@ import 'screens/bluetooth_off_screen.dart';
 import 'screens/scan_screen.dart';
 import 'services/settings_service.dart';
 import 'services/battery_service.dart';
+import 'services/logging_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize logging first
+  LoggingService().initialize();
+  log.info('🚀 Blufie app starting up...');
   
   // Initialize services
   await SettingsService().initialize();
   await BatteryService().initialize();
   
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
+  log.info('✅ All services initialized successfully');
+  
   runApp(const FlutterBlueApp());
 }
 

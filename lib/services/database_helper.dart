@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/bluetooth_device_record.dart';
+import '../services/logging_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -62,7 +63,7 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
     } catch (e) {
-      print('Error inserting device: $e');
+      log.error('Error inserting device', e);
       return -1;
     }
   }

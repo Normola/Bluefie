@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../config/scan_config.dart';
+import '../services/logging_service.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -63,7 +64,7 @@ class LocationService {
       _locationController.add(_currentPosition);
       return _currentPosition;
     } catch (e) {
-      print('Error getting current location: $e');
+      log.error('Error getting current location', e);
       return null;
     }
   }
@@ -87,7 +88,7 @@ class LocationService {
         _locationController.add(position);
       },
       onError: (error) {
-        print('Location tracking error: $error');
+        log.error('Location tracking error', error);
         _locationController.add(null);
       },
     );

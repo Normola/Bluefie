@@ -5,6 +5,7 @@ import '../models/bluetooth_device_record.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/location_service.dart';
 import '../config/scan_config.dart';
+import  '../services/logging_service.dart';
 
 class DeviceHistoryScreen extends StatefulWidget {
   const DeviceHistoryScreen({super.key});
@@ -73,7 +74,7 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading data: $e');
+      log.error('Error loading data', e);
       setState(() {
         _isLoading = false;
       });

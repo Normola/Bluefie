@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
+import '../services/logging_service.dart';
 
 class SettingsService {
   static final SettingsService _instance = SettingsService._internal();
@@ -35,7 +36,7 @@ class SettingsService {
       
       _settingsController.add(_currentSettings);
     } catch (e) {
-      print('Error loading settings: $e');
+      log.error('Error loading settings', e);
       _currentSettings = const AppSettings();
       _settingsController.add(_currentSettings);
     }
@@ -47,7 +48,7 @@ class SettingsService {
       final settingsJson = jsonEncode(_currentSettings.toJson());
       await prefs.setString(_settingsKey, settingsJson);
     } catch (e) {
-      print('Error saving settings: $e');
+      log.error('Error saving settings', e);
     }
   }
 

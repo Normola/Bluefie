@@ -8,6 +8,7 @@ import '../services/location_service.dart';
 import '../services/settings_service.dart';
 import '../services/battery_service.dart';
 import '../config/scan_config.dart';
+import '../services/logging_service.dart';
 
 class BluetoothScanningService {
   static final BluetoothScanningService _instance = BluetoothScanningService._internal();
@@ -47,13 +48,13 @@ class BluetoothScanningService {
       // Check if Bluetooth is available and enabled
       BluetoothAdapterState adapterState = await FlutterBluePlus.adapterState.first;
       if (adapterState != BluetoothAdapterState.on) {
-        print('Bluetooth is not enabled');
+        log.warning('Bluetooth is not enabled');
         return false;
       }
 
       // Check battery level before starting
       if (_batteryService.shouldStopScanning()) {
-        print('Battery too low to start scanning: ${_batteryService.currentBatteryLevel}%');
+        log.warning('Battery too low to start scanning: ${_batteryService.currentBatteryLevel}%');
         return false;
       }
 
@@ -67,7 +68,7 @@ class BluetoothScanningService {
       _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
         _processScanResults(results);
       }, onError: (e) {
-        print('Scan results error: $e');
+        log.error('Scan results error', e);
       });
 
       // Set up scanning state listener
@@ -78,7 +79,7 @@ class BluetoothScanningService {
       // Set up low battery listener
       _lowBatterySubscription = _batteryService.lowBatteryStream.listen((isLowBattery) {
         if (isLowBattery && _isServiceRunning) {
-          print('Low battery detected - stopping continuous scanning');
+          log.warning('Low battery detected - stopping continuous scanning');
           stopContinuousScanning();
         }
       });
@@ -87,10 +88,10 @@ class BluetoothScanningService {
       _startContinuousScanTimer();
       
       _isServiceRunning = true;
-      print('Continuous Bluetooth scanning started');
+      log.info('Continuous Bluetooth scanning started');
       return true;
     } catch (e) {
-      print('Error starting continuous scanning: $e');
+      log.error('Error starting continuous scanning', e);
       return false;
     }
   }
@@ -104,7 +105,7 @@ class BluetoothScanningService {
         await _performScan();
       } else if (_batteryService.shouldStopScanning()) {
         if (settings.verboseLoggingEnabled) {
-          print('Skipping scan due to low battery: ${_batteryService.currentBatteryLevel}%');
+          log.info('Skipping scan due to low battery: ${_batteryService.currentBatteryLevel}%');
         }
       }
     });
@@ -119,14 +120,14 @@ class BluetoothScanningService {
     try {
       final settings = _settingsService.currentSettings;
       if (settings.verboseLoggingEnabled) {
-        print('Starting Bluetooth scan...');
+        log.info('Starting Bluetooth scan...');
       }
       await FlutterBluePlus.startScan(
         timeout: ScanConfig.scanDuration,
         androidUsesFineLocation: ScanConfig.useAndroidFineLocation,
       );
     } catch (e) {
-      print('Error starting scan: $e');
+      log.error('Error starting scan', e);
     }
   }
 
@@ -182,11 +183,11 @@ class BluetoothScanningService {
           newRecords.add(record);
           final settings = _settingsService.currentSettings;
           if (settings.verboseLoggingEnabled) {
-            print('Stored device: ${record.deviceName} (${record.macAddress}) RSSI: ${record.rssi}');
+            log.info('Stored device: ${record.deviceName} (${record.macAddress}) RSSI: ${record.rssi}');
           }
         }
       } catch (e) {
-        print('Error processing scan result: $e');
+        log.error('Error processing scan result', e);
       }
     }
 
@@ -203,10 +204,9 @@ class BluetoothScanningService {
 
       // Update recent devices (using config value)
       List<BluetoothDeviceRecord> recentDevices = await _databaseHelper.getAllDevices();
-      final settings = _settingsService.currentSettings;
       _recentDevicesController.add(recentDevices.take(ScanConfig.maxRecentDevices).toList());
     } catch (e) {
-      print('Error updating streams: $e');
+      log.error('Error updating streams', e);
     }
   }
 
@@ -232,10 +232,10 @@ class BluetoothScanningService {
 
       _isServiceRunning = false;
       _isScanning = false;
-      
-      print('Continuous Bluetooth scanning stopped');
+
+      log.info('Continuous Bluetooth scanning stopped');
     } catch (e) {
-      print('Error stopping continuous scanning: $e');
+      log.error('Error stopping continuous scanning', e);
     }
   }
 

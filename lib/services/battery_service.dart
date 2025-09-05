@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
 import '../services/settings_service.dart';
+import '../services/logging_service.dart';
 
 class BatteryService {
   static final BatteryService _instance = BatteryService._internal();
@@ -54,7 +55,7 @@ class BatteryService {
       _batteryLevelController.add(_currentBatteryLevel);
       _checkLowBatteryCondition();
     } catch (e) {
-      print('Error getting battery level: $e');
+      log.error('Error getting battery level', e);
     }
   }
 
@@ -75,11 +76,18 @@ class BatteryService {
     if (shouldTriggerLowBattery && !_lowBatteryTriggered) {
       _lowBatteryTriggered = true;
       _lowBatteryController.add(true);
-      print('Low battery detected: $_currentBatteryLevel% - Threshold: ${settings.batteryThresholdPercent}%');
+      log.battery('Low battery detected', {
+        'level': _currentBatteryLevel,
+        'threshold': settings.batteryThresholdPercent,
+        'state': _currentBatteryState.toString()
+      });
     } else if (!shouldTriggerLowBattery && _lowBatteryTriggered) {
       _lowBatteryTriggered = false;
       _lowBatteryController.add(false);
-      print('Battery level recovered: $_currentBatteryLevel%');
+      log.battery('Battery level recovered', {
+        'level': _currentBatteryLevel,
+        'state': _currentBatteryState.toString()
+      });
     }
   }
 

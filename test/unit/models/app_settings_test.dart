@@ -53,11 +53,7 @@ void main() {
 
     group('copyWith Tests', () {
       test('should return new instance with updated values', () {
-        const originalSettings = AppSettings(
-          autoScanningEnabled: false,
-          scanIntervalSeconds: 30,
-          batteryThresholdPercent: 20,
-        );
+        const originalSettings = AppSettings();
 
         final updatedSettings = originalSettings.copyWith(
           autoScanningEnabled: true,
@@ -125,9 +121,7 @@ void main() {
         );
 
         final updatedSettings = originalSettings.copyWith(
-          autoScanningEnabled: null, // Should keep original
           scanIntervalSeconds: 90, // Should update
-          batteryThresholdPercent: null, // Should keep original
         );
 
         expect(updatedSettings.autoScanningEnabled, true); // kept original
@@ -314,7 +308,7 @@ void main() {
         const settings = AppSettings(scanIntervalSeconds: 45);
         final duration = settings.scanInterval;
 
-        expect(duration, Duration(seconds: 45));
+        expect(duration, const Duration(seconds: 45));
         expect(duration.inSeconds, 45);
       });
 
@@ -322,7 +316,7 @@ void main() {
         const settings = AppSettings(dataRetentionDays: 60);
         final duration = settings.dataRetentionDuration;
 
-        expect(duration, Duration(days: 60));
+        expect(duration, const Duration(days: 60));
         expect(duration.inDays, 60);
       });
 
@@ -374,7 +368,6 @@ void main() {
 
       test('should be useful for debugging', () {
         const settings = AppSettings(
-          autoScanningEnabled: false,
           batteryThresholdPercent: 15,
           scanIntervalSeconds: 120,
         );

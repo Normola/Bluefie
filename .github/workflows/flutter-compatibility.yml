@@ -12,7 +12,7 @@ on:
         default: '3.22.0,3.24.3,stable'
 
 env:
-  JAVA_VERSION: '11'
+  JAVA_VERSION: '17'
 
 jobs:
   compatibility-matrix:

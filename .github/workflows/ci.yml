@@ -100,9 +100,6 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Clean previous builds
-        run: flutter clean
-
       - name: Build debug APK
         run: flutter build apk --debug
 
@@ -137,9 +134,6 @@ jobs:
 
       - name: Get Flutter dependencies
         run: flutter pub get
-
-      - name: Clean previous builds
-        run: flutter clean
 
       - name: Build profile APK for validation
         run: flutter build apk --profile

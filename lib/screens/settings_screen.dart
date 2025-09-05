@@ -1,10 +1,12 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../models/app_settings.dart';
-import '../services/settings_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
+import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,11 +20,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final BatteryService _batteryService = BatteryService();
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final DataExportService _exportService = DataExportService();
-  
+
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
-  
+
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
 
@@ -41,20 +43,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _setupStreams() {
     _settingsSubscription = _settingsService.settingsStream.listen((settings) {
-      if (mounted) {
-        setState(() {
-          _settings = settings;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _settings = settings;
+      });
     });
 
     _batteryLevelSubscription = _batteryService.batteryLevelStream.listen((level) {
-      if (mounted) {
-        setState(() {
-          _currentBatteryLevel = level;
-          _batteryStatusText = _batteryService.getBatteryStatusText();
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _currentBatteryLevel = level;
+        _batteryStatusText = _batteryService.getBatteryStatusText();
+      });
     });
   }
 
@@ -111,10 +113,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildBatteryStatusCard() {
-    Color batteryColor = _currentBatteryLevel > 50 
-        ? Colors.green 
-        : _currentBatteryLevel > 20 
-            ? Colors.orange 
+    final Color batteryColor = _currentBatteryLevel > 50
+        ? Colors.green
+        : _currentBatteryLevel > 20
+            ? Colors.orange
             : Colors.red;
 
     return Card(
@@ -142,9 +144,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       _batteryStatusText,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: batteryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: batteryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     if (_batteryService.isLowBattery)
                       Text(
@@ -175,24 +177,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Auto Scanning'),
-              subtitle: Text(_settings.autoScanningEnabled 
-                  ? 'Automatically scan for devices' 
+              subtitle: Text(_settings.autoScanningEnabled
+                  ? 'Automatically scan for devices'
                   : 'Manual scanning only'),
               value: _settings.autoScanningEnabled,
               onChanged: (value) async {
                 await _settingsService.updateAutoScanning(value);
                 if (value) {
                   _scanningService.startContinuousScanning();
-                } else {
-                  _scanningService.stopContinuousScanning();
+                  return;
                 }
+
+                _scanningService.stopContinuousScanning();
               },
             ),
             const Divider(),
             SwitchListTile(
               title: const Text('Auto Scan When Plugged In'),
-              subtitle: Text(_settings.autoScanWhenPluggedIn 
-                  ? 'Automatically start scanning when device is charging' 
+              subtitle: Text(_settings.autoScanWhenPluggedIn
+                  ? 'Automatically start scanning when device is charging'
                   : 'Manual control only'),
               value: _settings.autoScanWhenPluggedIn,
               onChanged: (value) async {
@@ -235,8 +238,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Auto-disable at low battery'),
-              subtitle: Text(_settings.batteryOptimizationEnabled 
-                  ? 'Stop scanning when battery is low' 
+              subtitle: Text(_settings.batteryOptimizationEnabled
+                  ? 'Stop scanning when battery is low'
                   : 'Continue scanning regardless of battery'),
               value: _settings.batteryOptimizationEnabled,
               onChanged: (value) {
@@ -333,7 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showScanIntervalDialog() {
     int currentInterval = _settings.scanIntervalSeconds;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -347,8 +350,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: currentInterval,
               isExpanded: true,
               items: [15, 30, 60, 120, 300].map((seconds) {
-                String label = seconds < 60 
-                    ? '$seconds seconds' 
+                final String label = seconds < 60
+                    ? '$seconds seconds'
                     : '${seconds ~/ 60} minute${seconds ~/ 60 > 1 ? 's' : ''}';
                 return DropdownMenuItem(value: seconds, child: Text(label));
               }).toList(),
@@ -379,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showBatteryThresholdDialog() {
     int currentThreshold = _settings.batteryThresholdPercent;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -422,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showDataRetentionDialog() {
     int currentRetention = _settings.dataRetentionDays;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -436,9 +439,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: currentRetention,
               isExpanded: true,
               items: [7, 14, 30, 60, 90, 180, 365].map((days) {
-                String label = days < 30 
-                    ? '$days days' 
-                    : days < 365 
+                final String label = days < 30
+                    ? '$days days'
+                    : days < 365
                         ? '${days ~/ 30} month${days ~/ 30 > 1 ? 's' : ''}'
                         : '1 year';
                 return DropdownMenuItem(value: days, child: Text(label));
@@ -544,71 +547,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       // Perform the export
-      String? filePath = await _exportService.exportAllDataToJson();
+      final String? filePath = await _exportService.exportAllDataToJson();
 
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
-      if (filePath != null) {
-        // Show success dialog with sharing option
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Export Successful'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Data exported successfully!'),
-                  const SizedBox(height: 8),
-                  Text('File: ${filePath.split('/').last}'),
-                  const SizedBox(height: 8),
-                  Text('Location: $filePath'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      await _exportService.shareExportedFile(filePath);
-                    } catch (e) {
-                      if (mounted) {
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Error sharing file: $e')),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Share'),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        // Show error
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Export failed')),
-          );
-        }
+      if (filePath == null) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Export failed')),
+        );
+        return;
       }
+
+      if (!mounted) return;
+
+      // Show success dialog with sharing option
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Export Successful'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Data exported successfully!'),
+              const SizedBox(height: 8),
+              Text('File: ${filePath.split('/').last}'),
+              const SizedBox(height: 8),
+              Text('Location: $filePath'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await _exportService.shareExportedFile(filePath);
+                } catch (e) {
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error sharing file: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Share'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       // Close loading dialog if still open
       if (mounted) Navigator.of(context).pop();
-      
+
       // Show error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export error: $e')),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export error: $e')),
+      );
     }
   }
 }

@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
+
+import '../config/scan_config.dart';
 import '../models/bluetooth_device_record.dart';
+import '../services/battery_service.dart';
 import '../services/database_helper.dart';
 import '../services/location_service.dart';
-import '../services/settings_service.dart';
-import '../services/battery_service.dart';
-import '../config/scan_config.dart';
 import '../services/logging_service.dart';
+import '../services/settings_service.dart';
 
 class BluetoothScanningService {
   static final BluetoothScanningService _instance = BluetoothScanningService._internal();
@@ -19,24 +21,24 @@ class BluetoothScanningService {
   final LocationService _locationService = LocationService();
   final SettingsService _settingsService = SettingsService();
   final BatteryService _batteryService = BatteryService();
-  
+
   StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
   StreamSubscription<bool>? _isScanningSubscription;
   StreamSubscription<bool>? _lowBatterySubscription;
   StreamSubscription<bool>? _chargingStateSubscription;
   Timer? _continuousScanTimer;
-  
+
   bool _isServiceRunning = false;
   bool _isScanning = false;
-  
+
   final StreamController<int> _deviceCountController = StreamController<int>.broadcast();
-  final StreamController<List<BluetoothDeviceRecord>> _recentDevicesController = 
+  final StreamController<List<BluetoothDeviceRecord>> _recentDevicesController =
       StreamController<List<BluetoothDeviceRecord>>.broadcast();
 
   // Streams for UI updates
   Stream<int> get deviceCountStream => _deviceCountController.stream;
   Stream<List<BluetoothDeviceRecord>> get recentDevicesStream => _recentDevicesController.stream;
-  
+
   bool get isServiceRunning => _isServiceRunning;
   bool get isScanning => _isScanning;
 
@@ -58,7 +60,7 @@ class BluetoothScanningService {
 
     try {
       // Check if Bluetooth is available and enabled
-      BluetoothAdapterState adapterState = await FlutterBluePlus.adapterState.first;
+      final BluetoothAdapterState adapterState = await FlutterBluePlus.adapterState.first;
       if (adapterState != BluetoothAdapterState.on) {
         log.warning('Bluetooth is not enabled');
         return false;
@@ -75,7 +77,7 @@ class BluetoothScanningService {
       if (settings.locationTrackingEnabled) {
         await _locationService.startLocationTracking();
       }
-      
+
       // Set up scan results listener
       _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
         _processScanResults(results);
@@ -107,7 +109,7 @@ class BluetoothScanningService {
 
       // Start continuous scanning timer
       _startContinuousScanTimer();
-      
+
       _isServiceRunning = true;
       log.info('Continuous Bluetooth scanning started');
       return true;
@@ -119,18 +121,21 @@ class BluetoothScanningService {
 
   void _startContinuousScanTimer() {
     final settings = _settingsService.currentSettings;
-    Duration scanInterval = Duration(seconds: settings.scanIntervalSeconds);
-    
+    final Duration scanInterval = Duration(seconds: settings.scanIntervalSeconds);
+
     _continuousScanTimer = Timer.periodic(scanInterval, (timer) async {
       if (!_isScanning && !_batteryService.shouldStopScanning()) {
         await _performScan();
-      } else if (_batteryService.shouldStopScanning()) {
+        return;
+      }
+
+      if (_batteryService.shouldStopScanning()) {
         if (settings.verboseLoggingEnabled) {
           log.info('Skipping scan due to low battery: ${_batteryService.currentBatteryLevel}%');
         }
       }
     });
-    
+
     // Start the first scan immediately if battery allows
     if (!_batteryService.shouldStopScanning()) {
       _performScan();
@@ -155,38 +160,39 @@ class BluetoothScanningService {
   void _processScanResults(List<ScanResult> results) async {
     final settings = _settingsService.currentSettings;
     Position? currentLocation;
-    
+
     if (settings.locationTrackingEnabled) {
       currentLocation = _locationService.currentPosition;
     }
-    
-    DateTime timestamp = DateTime.now();
-    
-    List<BluetoothDeviceRecord> newRecords = [];
-    
-    for (ScanResult result in results) {
+
+    final DateTime timestamp = DateTime.now();
+
+    final List<BluetoothDeviceRecord> newRecords = [];
+
+    for (final ScanResult result in results) {
       try {
         // Extract manufacturer data
         String? manufacturerData;
         if (result.advertisementData.manufacturerData.isNotEmpty) {
           manufacturerData = jsonEncode(result.advertisementData.manufacturerData.map(
-            (key, value) => MapEntry(key.toString(), value.map((e) => e.toRadixString(16)).join())
-          ));
+              (key, value) =>
+                  MapEntry(key.toString(), value.map((e) => e.toRadixString(16)).join())));
         }
 
         // Extract service UUIDs
         String? serviceUuids;
         if (result.advertisementData.serviceUuids.isNotEmpty) {
-          serviceUuids = result.advertisementData.serviceUuids.map((uuid) => uuid.toString()).join(',');
+          serviceUuids =
+              result.advertisementData.serviceUuids.map((uuid) => uuid.toString()).join(',');
         }
 
         // Create device record
-        BluetoothDeviceRecord record = BluetoothDeviceRecord(
+        final BluetoothDeviceRecord record = BluetoothDeviceRecord(
           deviceId: result.device.remoteId.toString(),
-          deviceName: result.advertisementData.advName.isNotEmpty 
-              ? result.advertisementData.advName 
-              : result.device.platformName.isNotEmpty 
-                  ? result.device.platformName 
+          deviceName: result.advertisementData.advName.isNotEmpty
+              ? result.advertisementData.advName
+              : result.device.platformName.isNotEmpty
+                  ? result.device.platformName
                   : 'Unknown Device',
           macAddress: result.device.remoteId.toString(),
           rssi: result.rssi,
@@ -199,12 +205,13 @@ class BluetoothScanningService {
         );
 
         // Store in database
-        int insertId = await _databaseHelper.insertDevice(record);
+        final int insertId = await _databaseHelper.insertDevice(record);
         if (insertId > 0) {
           newRecords.add(record);
           final settings = _settingsService.currentSettings;
           if (settings.verboseLoggingEnabled) {
-            log.info('Stored device: ${record.deviceName} (${record.macAddress}) RSSI: ${record.rssi}');
+            log.info(
+                'Stored device: ${record.deviceName} (${record.macAddress}) RSSI: ${record.rssi}');
           }
         }
       } catch (e) {
@@ -220,11 +227,11 @@ class BluetoothScanningService {
   Future<void> _updateStreams() async {
     try {
       // Update device count
-      int totalCount = await _databaseHelper.getDeviceCount();
+      final int totalCount = await _databaseHelper.getDeviceCount();
       _deviceCountController.add(totalCount);
 
       // Update recent devices (using config value)
-      List<BluetoothDeviceRecord> recentDevices = await _databaseHelper.getAllDevices();
+      final List<BluetoothDeviceRecord> recentDevices = await _databaseHelper.getAllDevices();
       _recentDevicesController.add(recentDevices.take(ScanConfig.maxRecentDevices).toList());
     } catch (e) {
       log.error('Error updating streams', e);
@@ -287,8 +294,8 @@ class BluetoothScanningService {
   }
 
   Future<void> cleanupOldData({int? daysToKeep}) async {
-    int days = daysToKeep ?? ScanConfig.defaultDataRetentionDays;
-    DateTime cutoffDate = DateTime.now().subtract(Duration(days: days));
+    final int days = daysToKeep ?? ScanConfig.defaultDataRetentionDays;
+    final DateTime cutoffDate = DateTime.now().subtract(Duration(days: days));
     await _databaseHelper.deleteOldRecords(cutoffDate);
     await _updateStreams();
   }

@@ -9,26 +9,26 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'screens/bluetooth_off_screen.dart';
 import 'screens/scan_screen.dart';
-import 'services/settings_service.dart';
 import 'services/battery_service.dart';
 import 'services/bluetooth_scanning_service.dart';
 import 'services/logging_service.dart';
+import 'services/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize logging first
   LoggingService().initialize();
   log.info('🚀 Blufie app starting up...');
-  
+
   // Initialize services
   await SettingsService().initialize();
   await BatteryService().initialize();
   await BluetoothScanningService().initialize();
-  
-  FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
+
+  FlutterBluePlus.setLogLevel(LogLevel.verbose);
   log.info('✅ All services initialized successfully');
-  
+
   runApp(const FlutterBlueApp());
 }
 
@@ -51,8 +51,7 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
   @override
   void initState() {
     super.initState();
-    _adapterStateStateSubscription =
-        FlutterBluePlus.adapterState.listen((state) {
+    _adapterStateStateSubscription = FlutterBluePlus.adapterState.listen((state) {
       _adapterState = state;
       if (mounted) {
         setState(() {});
@@ -68,7 +67,7 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
 
   @override
   Widget build(BuildContext context) {
-    Widget screen = _adapterState == BluetoothAdapterState.on
+    final Widget screen = _adapterState == BluetoothAdapterState.on
         ? const ScanScreen()
         : BluetoothOffScreen(adapterState: _adapterState);
 
@@ -91,8 +90,7 @@ class BluetoothAdapterStateObserver extends NavigatorObserver {
     super.didPush(route, previousRoute);
     if (route.settings.name == '/DeviceScreen') {
       // Start listening to Bluetooth state changes when a new route is pushed
-      _adapterStateSubscription ??=
-          FlutterBluePlus.adapterState.listen((state) {
+      _adapterStateSubscription ??= FlutterBluePlus.adapterState.listen((state) {
         if (state != BluetoothAdapterState.on) {
           // Pop the current route if Bluetooth is off
           navigator?.pop();

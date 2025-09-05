@@ -4,9 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-import "../utils/snackbar.dart";
-
-import "descriptor_tile.dart";
+import '../utils/snackbar.dart';
+import 'descriptor_tile.dart';
 
 class CharacteristicTile extends StatefulWidget {
   final BluetoothCharacteristic characteristic;
@@ -27,8 +26,7 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   @override
   void initState() {
     super.initState();
-    _lastValueSubscription =
-        widget.characteristic.lastValueStream.listen((value) {
+    _lastValueSubscription = widget.characteristic.lastValueStream.listen((value) {
       _value = value;
       if (mounted) {
         setState(() {});
@@ -46,41 +44,35 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
 
   List<int> _getRandomBytes() {
     final math = Random();
-    return [
-      math.nextInt(255),
-      math.nextInt(255),
-      math.nextInt(255),
-      math.nextInt(255)
-    ];
+    return [math.nextInt(255), math.nextInt(255), math.nextInt(255), math.nextInt(255)];
   }
 
   Future onReadPressed() async {
     try {
       await c.read();
-      Snackbar.show(ABC.c, "Read: Success", success: true);
+      Snackbar.show(ABC.c, 'Read: Success', success: true);
     } catch (e) {
-      Snackbar.show(ABC.c, prettyException("Read Error:", e), success: false);
+      Snackbar.show(ABC.c, prettyException('Read Error:', e), success: false);
     }
   }
 
   Future onWritePressed() async {
     try {
-      await c.write(_getRandomBytes(),
-          withoutResponse: c.properties.writeWithoutResponse);
-      Snackbar.show(ABC.c, "Write: Success", success: true);
+      await c.write(_getRandomBytes(), withoutResponse: c.properties.writeWithoutResponse);
+      Snackbar.show(ABC.c, 'Write: Success', success: true);
       if (c.properties.read) {
         await c.read();
       }
     } catch (e) {
-      Snackbar.show(ABC.c, prettyException("Write Error:", e), success: false);
+      Snackbar.show(ABC.c, prettyException('Write Error:', e), success: false);
     }
   }
 
   Future onSubscribePressed() async {
     try {
-      String op = c.isNotifying == false ? "Subscribe" : "Unubscribe";
+      final String op = c.isNotifying == false ? 'Subscribe' : 'Unubscribe';
       await c.setNotifyValue(c.isNotifying == false);
-      Snackbar.show(ABC.c, "$op : Success", success: true);
+      Snackbar.show(ABC.c, '$op : Success', success: true);
       if (c.properties.read) {
         await c.read();
       }
@@ -88,24 +80,23 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
         setState(() {});
       }
     } catch (e) {
-      Snackbar.show(ABC.c, prettyException("Subscribe Error:", e),
-          success: false);
+      Snackbar.show(ABC.c, prettyException('Subscribe Error:', e), success: false);
     }
   }
 
   Widget buildUuid(BuildContext context) {
-    String uuid = '0x${widget.characteristic.uuid.str.toUpperCase()}';
-    return Text(uuid, style: TextStyle(fontSize: 13));
+    final String uuid = '0x${widget.characteristic.uuid.str.toUpperCase()}';
+    return Text(uuid, style: const TextStyle(fontSize: 13));
   }
 
   Widget buildValue(BuildContext context) {
-    String data = _value.toString();
-    return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
+    final String data = _value.toString();
+    return Text(data, style: const TextStyle(fontSize: 13, color: Colors.grey));
   }
 
   Widget buildReadButton(BuildContext context) {
     return TextButton(
-        child: Text("Read"),
+        child: const Text('Read'),
         onPressed: () async {
           await onReadPressed();
           if (mounted) {
@@ -115,9 +106,9 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   }
 
   Widget buildWriteButton(BuildContext context) {
-    bool withoutResp = widget.characteristic.properties.writeWithoutResponse;
+    final bool withoutResp = widget.characteristic.properties.writeWithoutResponse;
     return TextButton(
-        child: Text(withoutResp ? "WriteNoResp" : "Write"),
+        child: Text(withoutResp ? 'WriteNoResp' : 'Write'),
         onPressed: () async {
           await onWritePressed();
           if (mounted) {
@@ -127,9 +118,9 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   }
 
   Widget buildSubscribeButton(BuildContext context) {
-    bool isNotifying = widget.characteristic.isNotifying;
+    final bool isNotifying = widget.characteristic.isNotifying;
     return TextButton(
-        child: Text(isNotifying ? "Unsubscribe" : "Subscribe"),
+        child: Text(isNotifying ? 'Unsubscribe' : 'Subscribe'),
         onPressed: () async {
           await onSubscribePressed();
           if (mounted) {
@@ -139,10 +130,10 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   }
 
   Widget buildButtonRow(BuildContext context) {
-    bool read = widget.characteristic.properties.read;
-    bool write = widget.characteristic.properties.write;
-    bool notify = widget.characteristic.properties.notify;
-    bool indicate = widget.characteristic.properties.indicate;
+    final bool read = widget.characteristic.properties.read;
+    final bool write = widget.characteristic.properties.write;
+    final bool notify = widget.characteristic.properties.notify;
+    final bool indicate = widget.characteristic.properties.indicate;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

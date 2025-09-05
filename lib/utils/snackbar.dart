@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-enum ABC {
-  a,
-  b,
-  c
-}
+enum ABC { a, b, c }
 
 class Snackbar {
   static final snackBarKeyA = GlobalKey<ScaffoldMessengerState>();
@@ -36,11 +32,10 @@ class Snackbar {
 String prettyException(String prefix, dynamic e) {
   switch (e) {
     case FlutterBluePlusException():
-      return "$prefix ${e.description}";
+      return '$prefix ${e.description}';
     case PlatformException():
-      return "$prefix ${e.message}";
+      return '$prefix ${e.message}';
     default:
-      return "$prefix ${e.toString()}";
+      return '$prefix ${e.toString()}';
   }
-
 }

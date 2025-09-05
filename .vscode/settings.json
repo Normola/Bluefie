@@ -1,0 +1,26 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "dart.lineLength": 100,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true,
+    "editor.rulers": [
+        100
+    ],
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "dart.showInspectorNotificationsForWidgetErrors": false,
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+    "codeium.enableConfig": {
+        "dart": true
+    },
+    "ai.customInstructions": "Follow the coding style defined in .ai-instructions.md: Never use else statements, minimize nesting, prefer early returns, keep code flat and readable."
+}

@@ -146,9 +146,47 @@ CREATE TABLE bluetooth_devices (
 
 ## Contributing
 
+### Coding Style Guidelines
+
+This project follows strict coding style rules for consistency and readability:
+
+#### Core Principles
+- **NO ELSE STATEMENTS**: Always use early returns instead of else clauses
+- **MINIMAL NESTING**: Keep code flat with maximum 2 levels of nesting
+- **EARLY RETURNS**: Use guard clauses and early returns for cleaner code flow
+
+#### Before Contributing
+1. Read `.ai-instructions.md` for detailed coding standards
+2. Ensure your IDE follows the settings in `.vscode/settings.json`
+3. Run `flutter analyze` to check for style violations
+4. All new code must follow the no-else, minimal-nesting pattern
+
+#### Example Code Patterns
+
+✅ **Good - Early Return Pattern**
+```dart
+if (!isValid) return;
+if (data == null) return;
+if (!mounted) return;
+
+processData(data);
+```
+
+❌ **Bad - Nested/Else Pattern**
+```dart
+if (isValid) {
+  if (data != null) {
+    if (mounted) {
+      processData(data);
+    }
+  }
+}
+```
+
+### Contribution Process
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Follow coding style guidelines
 4. Test thoroughly
 5. Submit a pull request
 

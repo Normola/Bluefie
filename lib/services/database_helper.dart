@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'package:sqflite/sqflite.dart';
+
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../models/bluetooth_device_record.dart';
 import '../services/logging_service.dart';
 
@@ -18,7 +20,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'bluetooth_devices.db');
+    final String path = join(await getDatabasesPath(), 'bluetooth_devices.db');
     return await openDatabase(
       path,
       version: 1,
@@ -48,7 +50,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE INDEX idx_timestamp ON bluetooth_devices(timestamp)
     ''');
-    
+
     await db.execute('''
       CREATE INDEX idx_mac_address ON bluetooth_devices(macAddress)
     ''');
@@ -80,8 +82,7 @@ class DatabaseHelper {
     });
   }
 
-  Future<List<BluetoothDeviceRecord>> getDevicesByDateRange(
-      DateTime start, DateTime end) async {
+  Future<List<BluetoothDeviceRecord>> getDevicesByDateRange(DateTime start, DateTime end) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'bluetooth_devices',
@@ -100,8 +101,8 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT * FROM bluetooth_devices d1
       WHERE d1.timestamp = (
-        SELECT MAX(d2.timestamp) 
-        FROM bluetooth_devices d2 
+        SELECT MAX(d2.timestamp)
+        FROM bluetooth_devices d2
         WHERE d2.macAddress = d1.macAddress
       )
       ORDER BY d1.timestamp DESC
@@ -134,7 +135,8 @@ class DatabaseHelper {
 
   Future<int> getUniqueDeviceCount() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(DISTINCT macAddress) as count FROM bluetooth_devices');
+    final result =
+        await db.rawQuery('SELECT COUNT(DISTINCT macAddress) as count FROM bluetooth_devices');
     return Sqflite.firstIntValue(result) ?? 0;
   }
 

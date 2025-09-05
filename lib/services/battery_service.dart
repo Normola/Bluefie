@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:battery_plus/battery_plus.dart';
-import '../services/settings_service.dart';
+
 import '../services/logging_service.dart';
+import '../services/settings_service.dart';
 
 class BatteryService {
   static final BatteryService _instance = BatteryService._internal();
@@ -10,31 +12,29 @@ class BatteryService {
 
   final Battery _battery = Battery();
   final SettingsService _settingsService = SettingsService();
-  
+
   StreamSubscription<BatteryState>? _batteryStateSubscription;
   Timer? _batteryLevelTimer;
-  
+
   int _currentBatteryLevel = 100;
   BatteryState _currentBatteryState = BatteryState.unknown;
   bool _lowBatteryTriggered = false;
-  
-  final StreamController<int> _batteryLevelController = 
-      StreamController<int>.broadcast();
-  final StreamController<bool> _lowBatteryController = 
-      StreamController<bool>.broadcast();
-  final StreamController<bool> _chargingStateController = 
-      StreamController<bool>.broadcast();
+
+  final StreamController<int> _batteryLevelController = StreamController<int>.broadcast();
+  final StreamController<bool> _lowBatteryController = StreamController<bool>.broadcast();
+  final StreamController<bool> _chargingStateController = StreamController<bool>.broadcast();
 
   // Streams for UI updates
   Stream<int> get batteryLevelStream => _batteryLevelController.stream;
   Stream<bool> get lowBatteryStream => _lowBatteryController.stream;
   Stream<bool> get chargingStateStream => _chargingStateController.stream;
-  
+
   int get currentBatteryLevel => _currentBatteryLevel;
   BatteryState get currentBatteryState => _currentBatteryState;
   bool get isLowBattery => _lowBatteryTriggered;
-  bool get isCharging => _currentBatteryState == BatteryState.charging || 
-                         _currentBatteryState == BatteryState.connectedNotCharging;
+  bool get isCharging =>
+      _currentBatteryState == BatteryState.charging ||
+      _currentBatteryState == BatteryState.connectedNotCharging;
 
   Future<void> initialize() async {
     await _updateBatteryLevel();
@@ -46,27 +46,24 @@ class BatteryService {
     _batteryStateSubscription = _battery.onBatteryStateChanged.listen((state) {
       final previousState = _currentBatteryState;
       _currentBatteryState = state;
-      
+
       // Check if charging state changed
-      final wasCharging = previousState == BatteryState.charging || 
-                         previousState == BatteryState.connectedNotCharging;
-      final isNowCharging = state == BatteryState.charging || 
-                           state == BatteryState.connectedNotCharging;
-      
+      final wasCharging = previousState == BatteryState.charging ||
+          previousState == BatteryState.connectedNotCharging;
+      final isNowCharging =
+          state == BatteryState.charging || state == BatteryState.connectedNotCharging;
+
       if (wasCharging != isNowCharging) {
         _chargingStateController.add(isNowCharging);
-        
+
         if (isNowCharging) {
-          log.battery('Device plugged in and charging', {
-            'state': state.toString()
-          });
-        } else {
-          log.battery('Device unplugged', {
-            'state': state.toString()
-          });
+          log.battery('Device plugged in and charging', {'state': state.toString()});
+          return;
         }
+
+        log.battery('Device unplugged', {'state': state.toString()});
       }
-      
+
       _checkLowBatteryCondition();
     });
 
@@ -88,7 +85,7 @@ class BatteryService {
 
   void _checkLowBatteryCondition() {
     final settings = _settingsService.currentSettings;
-    
+
     if (!settings.batteryOptimizationEnabled) {
       if (_lowBatteryTriggered) {
         _lowBatteryTriggered = false;
@@ -97,8 +94,8 @@ class BatteryService {
       return;
     }
 
-    bool shouldTriggerLowBattery = _currentBatteryLevel <= settings.batteryThresholdPercent &&
-                                   _currentBatteryState != BatteryState.charging;
+    final bool shouldTriggerLowBattery = _currentBatteryLevel <= settings.batteryThresholdPercent &&
+        _currentBatteryState != BatteryState.charging;
 
     if (shouldTriggerLowBattery && !_lowBatteryTriggered) {
       _lowBatteryTriggered = true;
@@ -108,21 +105,22 @@ class BatteryService {
         'threshold': settings.batteryThresholdPercent,
         'state': _currentBatteryState.toString()
       });
-    } else if (!shouldTriggerLowBattery && _lowBatteryTriggered) {
+      return;
+    }
+
+    if (!shouldTriggerLowBattery && _lowBatteryTriggered) {
       _lowBatteryTriggered = false;
       _lowBatteryController.add(false);
-      log.battery('Battery level recovered', {
-        'level': _currentBatteryLevel,
-        'state': _currentBatteryState.toString()
-      });
+      log.battery('Battery level recovered',
+          {'level': _currentBatteryLevel, 'state': _currentBatteryState.toString()});
     }
   }
 
   bool shouldStopScanning() {
     final settings = _settingsService.currentSettings;
-    return settings.batteryOptimizationEnabled && 
-           _currentBatteryLevel <= settings.batteryThresholdPercent &&
-           _currentBatteryState != BatteryState.charging;
+    return settings.batteryOptimizationEnabled &&
+        _currentBatteryLevel <= settings.batteryThresholdPercent &&
+        _currentBatteryState != BatteryState.charging;
   }
 
   String getBatteryStatusText() {
@@ -144,7 +142,7 @@ class BatteryService {
         stateText = '';
         break;
     }
-    
+
     return '$_currentBatteryLevel%$stateText';
   }
 

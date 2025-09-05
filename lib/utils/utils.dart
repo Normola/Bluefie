@@ -31,8 +31,7 @@ extension _StreamNewStreamWithInitialValue<T> on Stream<T> {
   }
 }
 
-class _NewStreamWithInitialValueTransformer<T>
-    extends StreamTransformerBase<T, T> {
+class _NewStreamWithInitialValueTransformer<T> extends StreamTransformerBase<T, T> {
   final T initialValue;
 
   late StreamController<T> controller;
@@ -46,9 +45,9 @@ class _NewStreamWithInitialValueTransformer<T>
   Stream<T> bind(Stream<T> stream) {
     if (stream.isBroadcast) {
       return _bind(stream, broadcast: true);
-    } else {
-      return _bind(stream);
     }
+
+    return _bind(stream);
   }
 
   Stream<T> _bind(Stream<T> stream, {bool broadcast = false}) {
@@ -100,14 +99,15 @@ class _NewStreamWithInitialValueTransformer<T>
         onListen: onListen,
         onCancel: onCancel,
       );
-    } else {
-      controller = StreamController<T>(
-        onListen: onListen,
-        onPause: onPause,
-        onResume: onResume,
-        onCancel: onCancel,
-      );
+      return controller.stream;
     }
+
+    controller = StreamController<T>(
+      onListen: onListen,
+      onPause: onPause,
+      onResume: onResume,
+      onCancel: onCancel,
+    );
 
     return controller.stream;
   }

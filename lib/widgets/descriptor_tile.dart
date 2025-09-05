@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-import "../utils/snackbar.dart";
+import '../utils/snackbar.dart';
 
 class DescriptorTile extends StatefulWidget {
   final BluetoothDescriptor descriptor;
@@ -41,55 +41,48 @@ class _DescriptorTileState extends State<DescriptorTile> {
 
   List<int> _getRandomBytes() {
     final math = Random();
-    return [
-      math.nextInt(255),
-      math.nextInt(255),
-      math.nextInt(255),
-      math.nextInt(255)
-    ];
+    return [math.nextInt(255), math.nextInt(255), math.nextInt(255), math.nextInt(255)];
   }
 
   Future onReadPressed() async {
     try {
       await d.read();
-      Snackbar.show(ABC.c, "Descriptor Read : Success", success: true);
+      Snackbar.show(ABC.c, 'Descriptor Read : Success', success: true);
     } catch (e) {
-      Snackbar.show(ABC.c, prettyException("Descriptor Read Error:", e),
-          success: false);
+      Snackbar.show(ABC.c, prettyException('Descriptor Read Error:', e), success: false);
     }
   }
 
   Future onWritePressed() async {
     try {
       await d.write(_getRandomBytes());
-      Snackbar.show(ABC.c, "Descriptor Write : Success", success: true);
+      Snackbar.show(ABC.c, 'Descriptor Write : Success', success: true);
     } catch (e) {
-      Snackbar.show(ABC.c, prettyException("Descriptor Write Error:", e),
-          success: false);
+      Snackbar.show(ABC.c, prettyException('Descriptor Write Error:', e), success: false);
     }
   }
 
   Widget buildUuid(BuildContext context) {
-    String uuid = '0x${widget.descriptor.uuid.str.toUpperCase()}';
-    return Text(uuid, style: TextStyle(fontSize: 13));
+    final String uuid = '0x${widget.descriptor.uuid.str.toUpperCase()}';
+    return Text(uuid, style: const TextStyle(fontSize: 13));
   }
 
   Widget buildValue(BuildContext context) {
-    String data = _value.toString();
-    return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
+    final String data = _value.toString();
+    return Text(data, style: const TextStyle(fontSize: 13, color: Colors.grey));
   }
 
   Widget buildReadButton(BuildContext context) {
     return TextButton(
       onPressed: onReadPressed,
-      child: Text("Read"),
+      child: const Text('Read'),
     );
   }
 
   Widget buildWriteButton(BuildContext context) {
     return TextButton(
       onPressed: onWritePressed,
-      child: Text("Write"),
+      child: const Text('Write'),
     );
   }
 

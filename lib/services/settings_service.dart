@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/app_settings.dart';
 import '../services/logging_service.dart';
 
@@ -10,9 +12,9 @@ class SettingsService {
   SettingsService._internal();
 
   static const String _settingsKey = 'app_settings';
-  
+
   AppSettings _currentSettings = const AppSettings();
-  final StreamController<AppSettings> _settingsController = 
+  final StreamController<AppSettings> _settingsController =
       StreamController<AppSettings>.broadcast();
 
   Stream<AppSettings> get settingsStream => _settingsController.stream;
@@ -26,14 +28,15 @@ class SettingsService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final settingsJson = prefs.getString(_settingsKey);
-      
+
       if (settingsJson != null) {
         final settingsMap = jsonDecode(settingsJson) as Map<String, dynamic>;
         _currentSettings = AppSettings.fromJson(settingsMap);
-      } else {
-        _currentSettings = const AppSettings();
+        _settingsController.add(_currentSettings);
+        return;
       }
-      
+
+      _currentSettings = const AppSettings();
       _settingsController.add(_currentSettings);
     } catch (e) {
       log.error('Error loading settings', e);

@@ -1,11 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../config/scan_config.dart';
 import '../models/bluetooth_device_record.dart';
 import '../services/bluetooth_scanning_service.dart';
-import '../services/location_service.dart';
 import '../services/data_export_service.dart';
-import '../config/scan_config.dart';
+import '../services/location_service.dart';
 import '../services/logging_service.dart';
 import 'device_location_map_screen.dart';
 
@@ -20,17 +22,17 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final LocationService _locationService = LocationService();
   final DataExportService _exportService = DataExportService();
-  
+
   late TabController _tabController;
-  
+
   List<BluetoothDeviceRecord> _allDevices = [];
   List<BluetoothDeviceRecord> _uniqueDevices = [];
   List<BluetoothDeviceRecord> _recentDevices = [];
-  
+
   int _totalDeviceCount = 0;
   int _uniqueDeviceCount = 0;
   bool _isLoading = true;
-  
+
   StreamSubscription<int>? _deviceCountSubscription;
   StreamSubscription<List<BluetoothDeviceRecord>>? _recentDevicesSubscription;
 
@@ -44,19 +46,19 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
 
   void _setupStreams() {
     _deviceCountSubscription = _scanningService.deviceCountStream.listen((count) {
-      if (mounted) {
-        setState(() {
-          _totalDeviceCount = count;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _totalDeviceCount = count;
+      });
     });
 
     _recentDevicesSubscription = _scanningService.recentDevicesStream.listen((devices) {
-      if (mounted) {
-        setState(() {
-          _recentDevices = devices;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _recentDevices = devices;
+      });
     });
   }
 
@@ -131,9 +133,9 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).primaryColor,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
         ),
         Text(
           label,
@@ -161,7 +163,7 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
 
   Widget _buildDeviceCard(BluetoothDeviceRecord device) {
     final formatter = DateFormat('MMM dd, yyyy HH:mm:ss');
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: ExpansionTile(
@@ -209,7 +211,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
                 _buildDetailRow('Device ID', device.deviceId),
                 _buildDetailRow('Connectable', device.isConnectable ? 'Yes' : 'No'),
                 if (device.latitude != null && device.longitude != null)
-                  _buildDetailRow('Location', '${device.latitude!.toStringAsFixed(6)}, ${device.longitude!.toStringAsFixed(6)}'),
+                  _buildDetailRow('Location',
+                      '${device.latitude!.toStringAsFixed(6)}, ${device.longitude!.toStringAsFixed(6)}'),
                 if (device.manufacturerData != null)
                   _buildDetailRow('Manufacturer Data', device.manufacturerData!),
                 if (device.serviceUuids != null)
@@ -252,7 +255,7 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
         break;
       }
     }
-    
+
     if (deviceWithLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -267,7 +270,7 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => DeviceLocationMapScreen(
-          deviceName: 'All Devices', 
+          deviceName: 'All Devices',
           macAddress: deviceWithLocation!.macAddress,
         ),
       ),
@@ -336,23 +339,7 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
             },
           ),
           PopupMenuButton<String>(
-            onSelected: (value) async {
-              switch (value) {
-                case 'view_all_locations':
-                  _showAllDeviceLocationsMap();
-                  break;
-                case 'export_data':
-                  _showExportDialog();
-                  break;
-                case 'clear_all':
-                  _showClearDataDialog();
-                  break;
-                case 'cleanup_old':
-                  await _scanningService.cleanupOldData(daysToKeep: ScanConfig.cleanupDataRetentionDays);
-                  _initializeData();
-                  break;
-              }
-            },
+            onSelected: _handleMenuSelection,
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'view_all_locations',
@@ -404,12 +391,31 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
     );
   }
 
+  Future<void> _handleMenuSelection(String value) async {
+    switch (value) {
+      case 'view_all_locations':
+        _showAllDeviceLocationsMap();
+        break;
+      case 'export_data':
+        _showExportDialog();
+        break;
+      case 'clear_all':
+        _showClearDataDialog();
+        break;
+      case 'cleanup_old':
+        await _scanningService.cleanupOldData(daysToKeep: ScanConfig.cleanupDataRetentionDays);
+        _initializeData();
+        break;
+    }
+  }
+
   void _showClearDataDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Data'),
-        content: const Text('Are you sure you want to delete all stored device data? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete all stored device data? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -481,71 +487,76 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
       );
 
       // Perform the export
-      String? filePath = await _exportService.exportAllDataToJson();
+      final String? filePath = await _exportService.exportAllDataToJson();
 
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
-      if (filePath != null) {
-        // Show success dialog with sharing option
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Export Successful'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Data exported successfully!'),
-                  const SizedBox(height: 8),
-                  Text('File: ${filePath.split('/').last}'),
-                  const SizedBox(height: 8),
-                  Text('Location: $filePath'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      await _exportService.shareExportedFile(filePath);
-                    } catch (e) {
-                      if (mounted) {
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Error sharing file: $e')),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Share'),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        // Show error
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Export failed')),
-          );
-        }
+      if (filePath == null) {
+        _showExportError('Export failed');
+        return;
       }
+
+      _showExportSuccess(filePath);
     } catch (e) {
       // Close loading dialog if still open
       if (mounted) Navigator.of(context).pop();
-      
+
       // Show error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export error: $e')),
-        );
-      }
+      _showExportError('Export error: $e');
     }
+  }
+
+  void _showExportSuccess(String filePath) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Successful'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Data exported successfully!'),
+            const SizedBox(height: 8),
+            Text('File: ${filePath.split('/').last}'),
+            const SizedBox(height: 8),
+            Text('Location: $filePath'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () => _shareExportedFile(filePath),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareExportedFile(String filePath) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _exportService.shareExportedFile(filePath);
+    } catch (e) {
+      if (!mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error sharing file: $e')),
+      );
+    }
+  }
+
+  void _showExportError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

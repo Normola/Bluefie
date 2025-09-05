@@ -8,6 +8,8 @@ import '../services/bluetooth_scanning_service.dart';
 import '../services/settings_service.dart';
 import '../utils/snackbar.dart';
 
+// Test comment for pre-commit hook formatting
+
 class BatteryMonitorScreen extends StatefulWidget {
   const BatteryMonitorScreen({super.key});
 

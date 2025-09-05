@@ -11,6 +11,7 @@ import '../utils/extra.dart';
 import '../utils/snackbar.dart';
 import '../widgets/scan_result_tile.dart';
 import '../widgets/system_device_tile.dart';
+import 'battery_monitor_screen.dart';
 import 'device_history_screen.dart';
 import 'device_screen.dart';
 import 'settings_screen.dart';
@@ -376,6 +377,14 @@ class _ScanScreenState extends State<ScanScreen> {
         appBar: AppBar(
           title: const Text('Blufie Scanner'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.battery_std),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const BatteryMonitorScreen()),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.location_on),
               onPressed: () async {

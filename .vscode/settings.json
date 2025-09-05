@@ -41,5 +41,6 @@
     "coverage-gutters.coveredcolor": "rgba(0, 0, 0, 0)",
     "flutter-coverage.coveragePath": "coverage/lcov.info",
     "flutter-coverage.enabled": true,
-    "flutter-coverage.displayMode": "gutter"
+    "flutter-coverage.displayMode": "gutter",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

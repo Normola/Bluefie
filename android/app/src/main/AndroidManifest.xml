@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
+    
      <!-- Allow Bluetooth -->
      <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 

@@ -79,8 +79,7 @@ jobs:
   build-debug:
     name: Build Debug APK
     runs-on: ubuntu-latest
-    # Remove test dependency - build can run in parallel with tests
-    needs: [analyze]
+    # Run completely independently - no dependencies
 
     steps:
       - name: Checkout repository
@@ -101,6 +100,9 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Clean previous builds
+        run: flutter clean
+
       - name: Build debug APK
         run: flutter build apk --debug
 
@@ -114,8 +116,7 @@ jobs:
   build-validation:
     name: Build Validation
     runs-on: ubuntu-latest
-    # Remove test dependency - build can run in parallel with tests
-    needs: [analyze]
+    # Run completely independently - no dependencies
     if: github.event_name == 'pull_request'
 
     steps:
@@ -136,6 +137,9 @@ jobs:
 
       - name: Get Flutter dependencies
         run: flutter pub get
+
+      - name: Clean previous builds
+        run: flutter clean
 
       - name: Build profile APK for validation
         run: flutter build apk --profile
@@ -180,8 +184,7 @@ jobs:
   dependency-security-check:
     name: Security Check
     runs-on: ubuntu-latest
-    # Can run in parallel with other jobs after basic setup
-    needs: [analyze]
+    # Run completely independently - no dependencies
 
     steps:
       - name: Checkout repository

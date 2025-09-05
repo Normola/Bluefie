@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'services/app_configuration.dart';
 import 'widgets/flutter_blue_app_widget.dart';
 
+// coverage:ignore-start
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -12,6 +13,7 @@ void main() async {
 
   runApp(FlutterBlueApp(appConfiguration: appConfig));
 }
+// coverage:ignore-end
 
 //
 // Main app entry point - now uses dependency injection

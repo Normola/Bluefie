@@ -51,9 +51,13 @@ class LocationService {
         return null;
       }
 
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+      const LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
         timeLimit: ScanConfig.locationTimeout,
+      );
+
+      _currentPosition = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
       );
       
       _locationController.add(_currentPosition);
@@ -69,9 +73,9 @@ class LocationService {
       return;
     }
 
-    const LocationSettings locationSettings = LocationSettings(
+    final LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: ScanConfig.minLocationUpdateDistance,
+      distanceFilter: ScanConfig.minLocationUpdateDistance.round(),
       timeLimit: ScanConfig.locationTimeout,
     );
 

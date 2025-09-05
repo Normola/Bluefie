@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
-import '../models/app_settings.dart';
 import '../services/settings_service.dart';
 
 class BatteryService {
@@ -76,11 +75,11 @@ class BatteryService {
     if (shouldTriggerLowBattery && !_lowBatteryTriggered) {
       _lowBatteryTriggered = true;
       _lowBatteryController.add(true);
-      print('Low battery detected: ${_currentBatteryLevel}% - Threshold: ${settings.batteryThresholdPercent}%');
+      print('Low battery detected: $_currentBatteryLevel% - Threshold: ${settings.batteryThresholdPercent}%');
     } else if (!shouldTriggerLowBattery && _lowBatteryTriggered) {
       _lowBatteryTriggered = false;
       _lowBatteryController.add(false);
-      print('Battery level recovered: ${_currentBatteryLevel}%');
+      print('Battery level recovered: $_currentBatteryLevel%');
     }
   }
 
@@ -102,6 +101,9 @@ class BatteryService {
         break;
       case BatteryState.full:
         stateText = ' (Full)';
+        break;
+      case BatteryState.connectedNotCharging:
+        stateText = ' (Connected, Not Charging)';
         break;
       case BatteryState.unknown:
         stateText = '';

@@ -161,8 +161,8 @@ class BluetoothScanningService {
         // Create device record
         BluetoothDeviceRecord record = BluetoothDeviceRecord(
           deviceId: result.device.remoteId.toString(),
-          deviceName: result.advertisementData.localName.isNotEmpty 
-              ? result.advertisementData.localName 
+          deviceName: result.advertisementData.advName.isNotEmpty 
+              ? result.advertisementData.advName 
               : result.device.platformName.isNotEmpty 
                   ? result.device.platformName 
                   : 'Unknown Device',

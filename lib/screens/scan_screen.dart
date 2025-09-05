@@ -153,7 +153,7 @@ class _ScanScreenState extends State<ScanScreen> {
     } else {
       if (_batteryService.shouldStopScanning()) {
         Snackbar.show(ABC.b, 
-          "Cannot start scanning: Battery level too low (${_batteryLevel}%)", 
+          "Cannot start scanning: Battery level too low ($_batteryLevel%)", 
           success: false);
         return;
       }

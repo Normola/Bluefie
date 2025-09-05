@@ -45,11 +45,11 @@ Write-Host "🧪 Testing the pre-commit hook..." -ForegroundColor Blue
 $dartFiles = Get-ChildItem -Recurse -Filter "*.dart" -File | Select-Object -First 5
 if ($dartFiles.Count -gt 0) {
     Write-Host "✓ Found $($dartFiles.Count) Dart files for testing" -ForegroundColor Green
-    
+
     # Run dart format on a few files to see if it works
     Write-Host "Running dart format test..." -ForegroundColor Yellow
     $testFile = $dartFiles[0].FullName
-    
+
     try {
         $result = & dart format --output=none $testFile 2>&1
         Write-Host "✓ Dart format test successful" -ForegroundColor Green

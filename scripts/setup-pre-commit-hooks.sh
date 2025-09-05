@@ -48,11 +48,11 @@ echo -e "${BLUE}🧪 Testing the pre-commit hook...${NC}"
 DART_FILES=$(find . -name "*.dart" -type f | head -5)
 if [ -n "$DART_FILES" ]; then
     echo -e "${GREEN}✓ Found Dart files for testing${NC}"
-    
+
     # Run dart format on a few files to see if it works
     echo -e "${YELLOW}Running dart format test...${NC}"
     echo "$DART_FILES" | head -1 | xargs dart format --output=none
-    
+
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Dart format test successful${NC}"
     else

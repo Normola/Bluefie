@@ -22,5 +22,24 @@
     "codeium.enableConfig": {
         "dart": true
     },
-    "ai.customInstructions": "Follow the coding style defined in .ai-instructions.md: Never use else statements, minimize nesting, prefer early returns, keep code flat and readable."
+    "ai.customInstructions": "Follow the coding style defined in .ai-instructions.md: Never use else statements, minimize nesting, prefer early returns, keep code flat and readable.",
+    // Coverage Configuration
+    "coverage-gutters.coverageFileNames": [
+        "lcov.info",
+        "cov.xml",
+        "coverage.xml",
+        "jacoco.xml",
+        "coverage.lcov"
+    ],
+    "coverage-gutters.coverageBaseDir": "coverage",
+    "coverage-gutters.showGutterCoverage": true,
+    "coverage-gutters.showLineCoverage": false,
+    "coverage-gutters.showRulerCoverage": true,
+    "coverage-gutters.highlightdark": "rgba(0, 0, 0, 0)",
+    "coverage-gutters.nocovagedark": "rgba(0, 0, 0, 0)",
+    "coverage-gutters.partialcovagedark": "rgba(0, 0, 0, 0)",
+    "coverage-gutters.coveredcolor": "rgba(0, 0, 0, 0)",
+    "flutter-coverage.coveragePath": "coverage/lcov.info",
+    "flutter-coverage.enabled": true,
+    "flutter-coverage.displayMode": "gutter"
 }

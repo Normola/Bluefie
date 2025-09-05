@@ -353,7 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               DropdownButton<int>(
                 value: currentInterval,
                 isExpanded: true,
-                items: [15, 30, 60, 120, 300].map((seconds) {
+                items: [1, 2, 5, 10, 15, 30, 60, 120, 300].map((seconds) {
                   final String label = seconds < 60
                       ? '$seconds seconds'
                       : '${seconds ~/ 60} minute${seconds ~/ 60 > 1 ? 's' : ''}';

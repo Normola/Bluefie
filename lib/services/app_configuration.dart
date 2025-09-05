@@ -53,7 +53,8 @@ class MockAppConfiguration implements AppConfigurationInterface {
 
   MockAppConfiguration({
     BluetoothAdapterState initialBluetoothState = BluetoothAdapterState.on,
-  }) : _mockBluetoothAdapter = MockBluetoothAdapter(initialState: initialBluetoothState);
+  }) : _mockBluetoothAdapter =
+            MockBluetoothAdapter(initialState: initialBluetoothState);
 
   @override
   Future<void> initializeServices() async {

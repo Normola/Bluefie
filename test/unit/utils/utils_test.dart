@@ -5,7 +5,8 @@ void main() {
   group('StreamControllerReemit', () {
     test('should emit initial value when provided', () async {
       const initialValue = 'initial';
-      final controller = StreamControllerReemit<String>(initialValue: initialValue);
+      final controller =
+          StreamControllerReemit<String>(initialValue: initialValue);
 
       // Listen to the stream
       final streamData = <String>[];
@@ -50,7 +51,8 @@ void main() {
 
     test('should handle multiple listeners with initial value', () async {
       const initialValue = 42;
-      final controller = StreamControllerReemit<int>(initialValue: initialValue);
+      final controller =
+          StreamControllerReemit<int>(initialValue: initialValue);
 
       final listener1Data = <int>[];
       final listener2Data = <int>[];

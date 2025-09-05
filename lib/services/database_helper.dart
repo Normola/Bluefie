@@ -82,7 +82,8 @@ class DatabaseHelper {
     });
   }
 
-  Future<List<BluetoothDeviceRecord>> getDevicesByDateRange(DateTime start, DateTime end) async {
+  Future<List<BluetoothDeviceRecord>> getDevicesByDateRange(
+      DateTime start, DateTime end) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'bluetooth_devices',
@@ -113,7 +114,8 @@ class DatabaseHelper {
     });
   }
 
-  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(String macAddress) async {
+  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(
+      String macAddress) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'bluetooth_devices',
@@ -129,14 +131,15 @@ class DatabaseHelper {
 
   Future<int> getDeviceCount() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) as count FROM bluetooth_devices');
+    final result =
+        await db.rawQuery('SELECT COUNT(*) as count FROM bluetooth_devices');
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
   Future<int> getUniqueDeviceCount() async {
     final db = await database;
-    final result =
-        await db.rawQuery('SELECT COUNT(DISTINCT macAddress) as count FROM bluetooth_devices');
+    final result = await db.rawQuery(
+        'SELECT COUNT(DISTINCT macAddress) as count FROM bluetooth_devices');
     return Sqflite.firstIntValue(result) ?? 0;
   }
 

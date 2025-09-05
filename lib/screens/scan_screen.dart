@@ -66,7 +66,8 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     // Listen to device count updates from the scanning service
-    _deviceCountSubscription = _scanningService.deviceCountStream.listen((count) {
+    _deviceCountSubscription =
+        _scanningService.deviceCountStream.listen((count) {
       if (!mounted) return;
 
       setState(() {
@@ -75,7 +76,8 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     // Listen to battery level updates
-    _batteryLevelSubscription = _batteryService.batteryLevelStream.listen((level) {
+    _batteryLevelSubscription =
+        _batteryService.batteryLevelStream.listen((level) {
       if (!mounted) return;
 
       setState(() {
@@ -84,20 +86,23 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     // Listen to low battery alerts
-    _lowBatterySubscription = _batteryService.lowBatteryStream.listen((isLowBattery) {
+    _lowBatterySubscription =
+        _batteryService.lowBatteryStream.listen((isLowBattery) {
       if (!mounted) return;
 
       setState(() {
         _isLowBattery = isLowBattery;
       });
       if (isLowBattery && _continuousScanning) {
-        Snackbar.show(ABC.b, 'Scanning stopped due to low battery', success: false);
+        Snackbar.show(ABC.b, 'Scanning stopped due to low battery',
+            success: false);
         _continuousScanning = false;
       }
     });
 
     // Listen to charging state changes
-    _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+    _chargingStateSubscription =
+        _batteryService.chargingStateStream.listen((isCharging) {
       if (!mounted) return;
 
       setState(() {
@@ -110,9 +115,11 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _initializeServices() async {
     // Request location permissions
-    final bool locationPermissionGranted = await _locationService.requestPermissions();
+    final bool locationPermissionGranted =
+        await _locationService.requestPermissions();
     if (!locationPermissionGranted) {
-      Snackbar.show(ABC.b, 'Location permission required for accurate device tracking',
+      Snackbar.show(
+          ABC.b, 'Location permission required for accurate device tracking',
           success: false);
     }
 
@@ -145,12 +152,14 @@ class _ScanScreenState extends State<ScanScreen> {
       final withServices = [Guid('180f')]; // Battery Level Service
       _systemDevices = await FlutterBluePlus.systemDevices(withServices);
     } catch (e) {
-      Snackbar.show(ABC.b, prettyException('System Devices Error:', e), success: false);
+      Snackbar.show(ABC.b, prettyException('System Devices Error:', e),
+          success: false);
     }
     try {
       await FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
     } catch (e) {
-      Snackbar.show(ABC.b, prettyException('Start Scan Error:', e), success: false);
+      Snackbar.show(ABC.b, prettyException('Start Scan Error:', e),
+          success: false);
     }
     if (!mounted) return;
 
@@ -169,7 +178,8 @@ class _ScanScreenState extends State<ScanScreen> {
     }
 
     if (_batteryService.shouldStopScanning()) {
-      Snackbar.show(ABC.b, 'Cannot start scanning: Battery level too low ($_batteryLevel%)',
+      Snackbar.show(ABC.b,
+          'Cannot start scanning: Battery level too low ($_batteryLevel%)',
           success: false);
       return;
     }
@@ -181,7 +191,8 @@ class _ScanScreenState extends State<ScanScreen> {
       Snackbar.show(ABC.b, 'Continuous scanning started', success: true);
     }
     if (!started) {
-      Snackbar.show(ABC.b, 'Failed to start continuous scanning', success: false);
+      Snackbar.show(ABC.b, 'Failed to start continuous scanning',
+          success: false);
     }
     if (!mounted) return;
 
@@ -192,13 +203,15 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       FlutterBluePlus.stopScan();
     } catch (e) {
-      Snackbar.show(ABC.b, prettyException('Stop Scan Error:', e), success: false);
+      Snackbar.show(ABC.b, prettyException('Stop Scan Error:', e),
+          success: false);
     }
   }
 
   void onConnectPressed(BluetoothDevice device) {
     device.connectAndUpdateStream().catchError((e) {
-      Snackbar.show(ABC.c, prettyException('Connect Error:', e), success: false);
+      Snackbar.show(ABC.c, prettyException('Connect Error:', e),
+          success: false);
     });
     final MaterialPageRoute route = MaterialPageRoute(
         builder: (context) => DeviceScreen(device: device),
@@ -225,7 +238,8 @@ class _ScanScreenState extends State<ScanScreen> {
       );
     }
 
-    return FloatingActionButton(onPressed: onScanPressed, child: const Text('SCAN'));
+    return FloatingActionButton(
+        onPressed: onScanPressed, child: const Text('SCAN'));
   }
 
   Widget _buildStatsCard() {
@@ -242,10 +256,11 @@ class _ScanScreenState extends State<ScanScreen> {
                   children: [
                     Text(
                       _storedDeviceCount.toString(),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
                     ),
                     const Text('Devices Stored'),
                   ],
@@ -254,10 +269,11 @@ class _ScanScreenState extends State<ScanScreen> {
                   children: [
                     Text(
                       _scanResults.length.toString(),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
                     ),
                     const Text('Current Scan'),
                   ],
@@ -309,8 +325,11 @@ class _ScanScreenState extends State<ScanScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: onToggleContinuousScanning,
-                    icon: Icon(_continuousScanning ? Icons.stop : Icons.play_arrow),
-                    label: Text(_continuousScanning ? 'Stop Auto Scan' : 'Start Auto Scan'),
+                    icon: Icon(
+                        _continuousScanning ? Icons.stop : Icons.play_arrow),
+                    label: Text(_continuousScanning
+                        ? 'Stop Auto Scan'
+                        : 'Start Auto Scan'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _continuousScanning
                           ? Colors.red
@@ -326,7 +345,8 @@ class _ScanScreenState extends State<ScanScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const DeviceHistoryScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const DeviceHistoryScreen()),
                       );
                     },
                     icon: const Icon(Icons.history),
@@ -381,7 +401,8 @@ class _ScanScreenState extends State<ScanScreen> {
               icon: const Icon(Icons.battery_std),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const BatteryMonitorScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const BatteryMonitorScreen()),
                 );
               },
             ),
@@ -390,7 +411,8 @@ class _ScanScreenState extends State<ScanScreen> {
               onPressed: () async {
                 final position = await _locationService.getCurrentLocation();
                 if (position != null) {
-                  Snackbar.show(ABC.b, 'Location: ${_locationService.getLocationString(position)}',
+                  Snackbar.show(ABC.b,
+                      'Location: ${_locationService.getLocationString(position)}',
                       success: true);
                   return;
                 }
@@ -402,7 +424,8 @@ class _ScanScreenState extends State<ScanScreen> {
               icon: const Icon(Icons.settings),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const SettingsScreen()),
                 );
               },
             ),

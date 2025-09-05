@@ -18,9 +18,10 @@ void main() {
 
       // Set up mock device properties
       when(mockDevice.platformName).thenReturn('Test Device');
-      when(mockDevice.remoteId).thenReturn(const DeviceIdentifier('test-device-001'));
-      when(mockDevice.connectionState)
-          .thenAnswer((_) => Stream.value(BluetoothConnectionState.disconnected));
+      when(mockDevice.remoteId)
+          .thenReturn(const DeviceIdentifier('test-device-001'));
+      when(mockDevice.connectionState).thenAnswer(
+          (_) => Stream.value(BluetoothConnectionState.disconnected));
 
       // Set up mock advertisement data
       when(mockAdvData.connectable).thenReturn(true);
@@ -40,7 +41,8 @@ void main() {
       );
     });
 
-    testWidgets('should display device information correctly', (WidgetTester tester) async {
+    testWidgets('should display device information correctly',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -86,7 +88,8 @@ void main() {
       expect(wasTapped, true);
     });
 
-    testWidgets('should display expandable tile structure', (WidgetTester tester) async {
+    testWidgets('should display expandable tile structure',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -105,14 +108,17 @@ void main() {
       expect(find.byType(ElevatedButton), findsOneWidget);
     });
 
-    testWidgets('should handle non-connectable device', (WidgetTester tester) async {
+    testWidgets('should handle non-connectable device',
+        (WidgetTester tester) async {
       final mockNonConnectableDevice = MockBluetoothDevice();
       final mockNonConnectableAdvData = MockAdvertisementData();
 
-      when(mockNonConnectableDevice.platformName).thenReturn('Non-Connectable Device');
-      when(mockNonConnectableDevice.remoteId).thenReturn(const DeviceIdentifier('test-device-002'));
-      when(mockNonConnectableDevice.connectionState)
-          .thenAnswer((_) => Stream.value(BluetoothConnectionState.disconnected));
+      when(mockNonConnectableDevice.platformName)
+          .thenReturn('Non-Connectable Device');
+      when(mockNonConnectableDevice.remoteId)
+          .thenReturn(const DeviceIdentifier('test-device-002'));
+      when(mockNonConnectableDevice.connectionState).thenAnswer(
+          (_) => Stream.value(BluetoothConnectionState.disconnected));
 
       when(mockNonConnectableAdvData.connectable).thenReturn(false);
       when(mockNonConnectableAdvData.advName).thenReturn('');
@@ -158,9 +164,10 @@ void main() {
       final mockStrongAdvData = MockAdvertisementData();
 
       when(mockStrongDevice.platformName).thenReturn('Strong Signal');
-      when(mockStrongDevice.remoteId).thenReturn(const DeviceIdentifier('test-device-003'));
-      when(mockStrongDevice.connectionState)
-          .thenAnswer((_) => Stream.value(BluetoothConnectionState.disconnected));
+      when(mockStrongDevice.remoteId)
+          .thenReturn(const DeviceIdentifier('test-device-003'));
+      when(mockStrongDevice.connectionState).thenAnswer(
+          (_) => Stream.value(BluetoothConnectionState.disconnected));
 
       when(mockStrongAdvData.connectable).thenReturn(true);
       when(mockStrongAdvData.advName).thenReturn('');
@@ -196,9 +203,10 @@ void main() {
       final mockWeakAdvData = MockAdvertisementData();
 
       when(mockWeakDevice.platformName).thenReturn('Weak Signal');
-      when(mockWeakDevice.remoteId).thenReturn(const DeviceIdentifier('test-device-004'));
-      when(mockWeakDevice.connectionState)
-          .thenAnswer((_) => Stream.value(BluetoothConnectionState.disconnected));
+      when(mockWeakDevice.remoteId)
+          .thenReturn(const DeviceIdentifier('test-device-004'));
+      when(mockWeakDevice.connectionState).thenAnswer(
+          (_) => Stream.value(BluetoothConnectionState.disconnected));
 
       when(mockWeakAdvData.connectable).thenReturn(true);
       when(mockWeakAdvData.advName).thenReturn('');
@@ -230,14 +238,16 @@ void main() {
       expect(find.text('-90'), findsOneWidget);
     });
 
-    testWidgets('should show connect button appropriately', (WidgetTester tester) async {
+    testWidgets('should show connect button appropriately',
+        (WidgetTester tester) async {
       final mockConnectableDevice = MockBluetoothDevice();
       final mockConnectableAdvData = MockAdvertisementData();
 
       when(mockConnectableDevice.platformName).thenReturn('Connectable Device');
-      when(mockConnectableDevice.remoteId).thenReturn(const DeviceIdentifier('test-device-005'));
-      when(mockConnectableDevice.connectionState)
-          .thenAnswer((_) => Stream.value(BluetoothConnectionState.disconnected));
+      when(mockConnectableDevice.remoteId)
+          .thenReturn(const DeviceIdentifier('test-device-005'));
+      when(mockConnectableDevice.connectionState).thenAnswer(
+          (_) => Stream.value(BluetoothConnectionState.disconnected));
 
       when(mockConnectableAdvData.connectable).thenReturn(true);
       when(mockConnectableAdvData.advName).thenReturn('');

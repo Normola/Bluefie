@@ -11,7 +11,8 @@ abstract class BluetoothNavigationObserverInterface extends NavigatorObserver {
 }
 
 /// Production implementation of Bluetooth-aware navigation observer
-class BluetoothAdapterStateObserver extends BluetoothNavigationObserverInterface {
+class BluetoothAdapterStateObserver
+    extends BluetoothNavigationObserverInterface {
   final BluetoothAdapterInterface _bluetoothAdapter;
   StreamSubscription<BluetoothAdapterState>? _adapterStateSubscription;
 
@@ -24,7 +25,8 @@ class BluetoothAdapterStateObserver extends BluetoothNavigationObserverInterface
     super.didPush(route, previousRoute);
     if (route.settings.name == '/DeviceScreen') {
       // Start listening to Bluetooth state changes when a new route is pushed
-      _adapterStateSubscription ??= _bluetoothAdapter.adapterStateStream.listen((state) {
+      _adapterStateSubscription ??=
+          _bluetoothAdapter.adapterStateStream.listen((state) {
         if (state != BluetoothAdapterState.on) {
           // Pop the current route if Bluetooth is off
           navigator?.pop();
@@ -49,7 +51,8 @@ class BluetoothAdapterStateObserver extends BluetoothNavigationObserverInterface
 }
 
 /// Mock implementation for testing
-class MockBluetoothNavigationObserver extends BluetoothNavigationObserverInterface {
+class MockBluetoothNavigationObserver
+    extends BluetoothNavigationObserverInterface {
   final List<String> _pushedRoutes = [];
   final List<String> _poppedRoutes = [];
   bool _disposed = false;

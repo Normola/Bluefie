@@ -13,7 +13,8 @@ import '../services/logging_service.dart';
 import '../services/settings_service.dart';
 
 class BluetoothScanningService {
-  static final BluetoothScanningService _instance = BluetoothScanningService._internal();
+  static final BluetoothScanningService _instance =
+      BluetoothScanningService._internal();
   factory BluetoothScanningService() => _instance;
   BluetoothScanningService._internal();
 
@@ -31,20 +32,23 @@ class BluetoothScanningService {
   bool _isServiceRunning = false;
   bool _isScanning = false;
 
-  final StreamController<int> _deviceCountController = StreamController<int>.broadcast();
+  final StreamController<int> _deviceCountController =
+      StreamController<int>.broadcast();
   final StreamController<List<BluetoothDeviceRecord>> _recentDevicesController =
       StreamController<List<BluetoothDeviceRecord>>.broadcast();
 
   // Streams for UI updates
   Stream<int> get deviceCountStream => _deviceCountController.stream;
-  Stream<List<BluetoothDeviceRecord>> get recentDevicesStream => _recentDevicesController.stream;
+  Stream<List<BluetoothDeviceRecord>> get recentDevicesStream =>
+      _recentDevicesController.stream;
 
   bool get isServiceRunning => _isServiceRunning;
   bool get isScanning => _isScanning;
 
   Future<void> initialize() async {
     // Set up global charging state monitoring for auto-scan when plugged in
-    _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+    _chargingStateSubscription =
+        _batteryService.chargingStateStream.listen((isCharging) {
       final settings = _settingsService.currentSettings;
       if (settings.autoScanWhenPluggedIn && isCharging && !_isServiceRunning) {
         log.info('Device plugged in - automatically starting scanning');
@@ -60,7 +64,8 @@ class BluetoothScanningService {
 
     try {
       // Check if Bluetooth is available and enabled
-      final BluetoothAdapterState adapterState = await FlutterBluePlus.adapterState.first;
+      final BluetoothAdapterState adapterState =
+          await FlutterBluePlus.adapterState.first;
       if (adapterState != BluetoothAdapterState.on) {
         log.warning('Bluetooth is not enabled');
         return false;
@@ -68,7 +73,8 @@ class BluetoothScanningService {
 
       // Check battery level before starting
       if (_batteryService.shouldStopScanning()) {
-        log.warning('Battery too low to start scanning: ${_batteryService.currentBatteryLevel}%');
+        log.warning(
+            'Battery too low to start scanning: ${_batteryService.currentBatteryLevel}%');
         return false;
       }
 
@@ -91,7 +97,8 @@ class BluetoothScanningService {
       });
 
       // Set up low battery listener
-      _lowBatterySubscription = _batteryService.lowBatteryStream.listen((isLowBattery) {
+      _lowBatterySubscription =
+          _batteryService.lowBatteryStream.listen((isLowBattery) {
         if (isLowBattery && _isServiceRunning) {
           log.warning('Low battery detected - stopping continuous scanning');
           stopContinuousScanning();
@@ -99,9 +106,12 @@ class BluetoothScanningService {
       });
 
       // Set up charging state listener for auto-scan when plugged in
-      _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+      _chargingStateSubscription =
+          _batteryService.chargingStateStream.listen((isCharging) {
         final settings = _settingsService.currentSettings;
-        if (settings.autoScanWhenPluggedIn && isCharging && !_isServiceRunning) {
+        if (settings.autoScanWhenPluggedIn &&
+            isCharging &&
+            !_isServiceRunning) {
           log.info('Device plugged in - automatically starting scanning');
           startContinuousScanning();
         }
@@ -121,7 +131,8 @@ class BluetoothScanningService {
 
   void _startContinuousScanTimer() {
     final settings = _settingsService.currentSettings;
-    final Duration scanInterval = Duration(seconds: settings.scanIntervalSeconds);
+    final Duration scanInterval =
+        Duration(seconds: settings.scanIntervalSeconds);
 
     _continuousScanTimer = Timer.periodic(scanInterval, (timer) async {
       if (!_isScanning && !_batteryService.shouldStopScanning()) {
@@ -131,7 +142,8 @@ class BluetoothScanningService {
 
       if (_batteryService.shouldStopScanning()) {
         if (settings.verboseLoggingEnabled) {
-          log.info('Skipping scan due to low battery: ${_batteryService.currentBatteryLevel}%');
+          log.info(
+              'Skipping scan due to low battery: ${_batteryService.currentBatteryLevel}%');
         }
       }
     });
@@ -174,16 +186,18 @@ class BluetoothScanningService {
         // Extract manufacturer data
         String? manufacturerData;
         if (result.advertisementData.manufacturerData.isNotEmpty) {
-          manufacturerData = jsonEncode(result.advertisementData.manufacturerData.map(
-              (key, value) =>
-                  MapEntry(key.toString(), value.map((e) => e.toRadixString(16)).join())));
+          manufacturerData = jsonEncode(result
+              .advertisementData.manufacturerData
+              .map((key, value) => MapEntry(key.toString(),
+                  value.map((e) => e.toRadixString(16)).join())));
         }
 
         // Extract service UUIDs
         String? serviceUuids;
         if (result.advertisementData.serviceUuids.isNotEmpty) {
-          serviceUuids =
-              result.advertisementData.serviceUuids.map((uuid) => uuid.toString()).join(',');
+          serviceUuids = result.advertisementData.serviceUuids
+              .map((uuid) => uuid.toString())
+              .join(',');
         }
 
         // Create device record
@@ -231,8 +245,10 @@ class BluetoothScanningService {
       _deviceCountController.add(totalCount);
 
       // Update recent devices (using config value)
-      final List<BluetoothDeviceRecord> recentDevices = await _databaseHelper.getAllDevices();
-      _recentDevicesController.add(recentDevices.take(ScanConfig.maxRecentDevices).toList());
+      final List<BluetoothDeviceRecord> recentDevices =
+          await _databaseHelper.getAllDevices();
+      _recentDevicesController
+          .add(recentDevices.take(ScanConfig.maxRecentDevices).toList());
     } catch (e) {
       log.error('Error updating streams', e);
     }
@@ -276,7 +292,8 @@ class BluetoothScanningService {
     return await _databaseHelper.getUniqueDevices();
   }
 
-  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(String macAddress) async {
+  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(
+      String macAddress) async {
     return await _databaseHelper.getDevicesByMacAddress(macAddress);
   }
 

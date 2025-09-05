@@ -13,7 +13,8 @@ class LocationService {
 
   Position? _currentPosition;
   StreamSubscription<Position>? _positionSubscription;
-  final StreamController<Position?> _locationController = StreamController<Position?>.broadcast();
+  final StreamController<Position?> _locationController =
+      StreamController<Position?>.broadcast();
 
   Stream<Position?> get locationStream => _locationController.stream;
   Position? get currentPosition => _currentPosition;
@@ -45,7 +46,8 @@ class LocationService {
     }
 
     // For Android 12+ devices, check if we have precise location access
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
       try {
         // Try to get a test location to verify we have precise location access
         final testPosition = await Geolocator.getCurrentPosition(
@@ -55,7 +57,8 @@ class LocationService {
         );
 
         // Log the precision we're getting
-        log.info('Location precision check: accuracy = ${testPosition.accuracy}m');
+        log.info(
+            'Location precision check: accuracy = ${testPosition.accuracy}m');
 
         // If accuracy is very poor (>1000m), user might have selected "approximate location"
         if (testPosition.accuracy > 1000) {

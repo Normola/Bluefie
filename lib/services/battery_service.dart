@@ -20,9 +20,12 @@ class BatteryService {
   BatteryState _currentBatteryState = BatteryState.unknown;
   bool _lowBatteryTriggered = false;
 
-  final StreamController<int> _batteryLevelController = StreamController<int>.broadcast();
-  final StreamController<bool> _lowBatteryController = StreamController<bool>.broadcast();
-  final StreamController<bool> _chargingStateController = StreamController<bool>.broadcast();
+  final StreamController<int> _batteryLevelController =
+      StreamController<int>.broadcast();
+  final StreamController<bool> _lowBatteryController =
+      StreamController<bool>.broadcast();
+  final StreamController<bool> _chargingStateController =
+      StreamController<bool>.broadcast();
 
   // Streams for UI updates
   Stream<int> get batteryLevelStream => _batteryLevelController.stream;
@@ -50,14 +53,15 @@ class BatteryService {
       // Check if charging state changed
       final wasCharging = previousState == BatteryState.charging ||
           previousState == BatteryState.connectedNotCharging;
-      final isNowCharging =
-          state == BatteryState.charging || state == BatteryState.connectedNotCharging;
+      final isNowCharging = state == BatteryState.charging ||
+          state == BatteryState.connectedNotCharging;
 
       if (wasCharging != isNowCharging) {
         _chargingStateController.add(isNowCharging);
 
         if (isNowCharging) {
-          log.battery('Device plugged in and charging', {'state': state.toString()});
+          log.battery(
+              'Device plugged in and charging', {'state': state.toString()});
           return;
         }
 
@@ -94,8 +98,9 @@ class BatteryService {
       return;
     }
 
-    final bool shouldTriggerLowBattery = _currentBatteryLevel <= settings.batteryThresholdPercent &&
-        _currentBatteryState != BatteryState.charging;
+    final bool shouldTriggerLowBattery =
+        _currentBatteryLevel <= settings.batteryThresholdPercent &&
+            _currentBatteryState != BatteryState.charging;
 
     if (shouldTriggerLowBattery && !_lowBatteryTriggered) {
       _lowBatteryTriggered = true;
@@ -111,8 +116,10 @@ class BatteryService {
     if (!shouldTriggerLowBattery && _lowBatteryTriggered) {
       _lowBatteryTriggered = false;
       _lowBatteryController.add(false);
-      log.battery('Battery level recovered',
-          {'level': _currentBatteryLevel, 'state': _currentBatteryState.toString()});
+      log.battery('Battery level recovered', {
+        'level': _currentBatteryLevel,
+        'state': _currentBatteryState.toString()
+      });
     }
   }
 

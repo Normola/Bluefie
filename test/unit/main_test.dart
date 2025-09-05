@@ -24,14 +24,17 @@ class MockAppConfiguration extends Mock implements AppConfigurationInterface {
   BluetoothAdapterInterface get bluetoothAdapter => _mockAdapter;
 
   @override
-  BluetoothNavigationObserverInterface createNavigationObserver() => _mockObserver;
+  BluetoothNavigationObserverInterface createNavigationObserver() =>
+      _mockObserver;
 }
 
 class MockBluetoothAdapter extends Mock implements BluetoothAdapterInterface {
-  final StreamController<BluetoothAdapterState> _stateController = StreamController.broadcast();
+  final StreamController<BluetoothAdapterState> _stateController =
+      StreamController.broadcast();
 
   @override
-  Stream<BluetoothAdapterState> get adapterStateStream => _stateController.stream;
+  Stream<BluetoothAdapterState> get adapterStateStream =>
+      _stateController.stream;
 
   @override
   BluetoothAdapterState get currentState => BluetoothAdapterState.on;
@@ -40,7 +43,8 @@ class MockBluetoothAdapter extends Mock implements BluetoothAdapterInterface {
   void setLogLevel(LogLevel level) {}
 }
 
-class MockNavigationObserver extends Mock implements BluetoothNavigationObserverInterface {}
+class MockNavigationObserver extends Mock
+    implements BluetoothNavigationObserverInterface {}
 
 void main() {
   group('Main Function Tests', () {
@@ -62,7 +66,8 @@ void main() {
 
     setUp(() {
       mockAppConfig = MockAppConfiguration();
-      mockBluetoothAdapter = mockAppConfig.bluetoothAdapter as MockBluetoothAdapter;
+      mockBluetoothAdapter =
+          mockAppConfig.bluetoothAdapter as MockBluetoothAdapter;
     });
 
     group('Constructor Tests', () {
@@ -77,7 +82,8 @@ void main() {
       });
 
       test('should require non-null appConfiguration', () {
-        expect(() => FlutterBlueApp(appConfiguration: mockAppConfig), returnsNormally);
+        expect(() => FlutterBlueApp(appConfiguration: mockAppConfig),
+            returnsNormally);
       });
 
       test('should support optional key parameter', () {
@@ -93,7 +99,8 @@ void main() {
     });
 
     group('Build Method Tests', () {
-      testWidgets('should build FlutterBlueAppWidget correctly', (WidgetTester tester) async {
+      testWidgets('should build FlutterBlueAppWidget correctly',
+          (WidgetTester tester) async {
         final app = FlutterBlueApp(appConfiguration: mockAppConfig);
 
         await tester.pumpWidget(MaterialApp(home: app));
@@ -113,10 +120,12 @@ void main() {
           find.byType(FlutterBlueAppWidget),
         );
 
-        expect(flutterBlueAppWidget.bluetoothAdapter, equals(mockBluetoothAdapter));
+        expect(flutterBlueAppWidget.bluetoothAdapter,
+            equals(mockBluetoothAdapter));
       });
 
-      testWidgets('should pass navigationObserverFactory to FlutterBlueAppWidget',
+      testWidgets(
+          'should pass navigationObserverFactory to FlutterBlueAppWidget',
           (WidgetTester tester) async {
         final app = FlutterBlueApp(appConfiguration: mockAppConfig);
 
@@ -147,7 +156,8 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('should handle rebuild correctly', (WidgetTester tester) async {
+      testWidgets('should handle rebuild correctly',
+          (WidgetTester tester) async {
         final app = FlutterBlueApp(appConfiguration: mockAppConfig);
 
         await tester.pumpWidget(MaterialApp(home: app));
@@ -159,7 +169,8 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('should handle different configurations', (WidgetTester tester) async {
+      testWidgets('should handle different configurations',
+          (WidgetTester tester) async {
         // Create a second mock configuration
         final mockAppConfig2 = MockAppConfiguration();
         final mockBluetoothAdapter2 = mockAppConfig2.bluetoothAdapter;
@@ -171,7 +182,8 @@ void main() {
         var flutterBlueAppWidget = tester.widget<FlutterBlueAppWidget>(
           find.byType(FlutterBlueAppWidget),
         );
-        expect(flutterBlueAppWidget.bluetoothAdapter, equals(mockBluetoothAdapter));
+        expect(flutterBlueAppWidget.bluetoothAdapter,
+            equals(mockBluetoothAdapter));
 
         // Test with second configuration
         final app2 = FlutterBlueApp(appConfiguration: mockAppConfig2);
@@ -180,7 +192,8 @@ void main() {
         flutterBlueAppWidget = tester.widget<FlutterBlueAppWidget>(
           find.byType(FlutterBlueAppWidget),
         );
-        expect(flutterBlueAppWidget.bluetoothAdapter, equals(mockBluetoothAdapter2));
+        expect(flutterBlueAppWidget.bluetoothAdapter,
+            equals(mockBluetoothAdapter2));
       });
     });
 
@@ -194,7 +207,8 @@ void main() {
         final flutterBlueAppWidget = tester.widget<FlutterBlueAppWidget>(
           find.byType(FlutterBlueAppWidget),
         );
-        expect(flutterBlueAppWidget.bluetoothAdapter, same(mockBluetoothAdapter));
+        expect(
+            flutterBlueAppWidget.bluetoothAdapter, same(mockBluetoothAdapter));
       });
 
       testWidgets('should properly inject navigationObserverFactory dependency',
@@ -259,13 +273,15 @@ void main() {
           find.byType(FlutterBlueAppWidget),
         );
 
-        expect(flutterBlueAppWidget.bluetoothAdapter, isA<BluetoothAdapterInterface>());
+        expect(flutterBlueAppWidget.bluetoothAdapter,
+            isA<BluetoothAdapterInterface>());
         expect(flutterBlueAppWidget.navigationObserverFactory, isA<Function>());
       });
     });
 
     group('Error Handling Tests', () {
-      testWidgets('should handle configuration errors gracefully', (WidgetTester tester) async {
+      testWidgets('should handle configuration errors gracefully',
+          (WidgetTester tester) async {
         // Create a mock that might throw - we'll test by creating a working mock first
         final app = FlutterBlueApp(appConfiguration: mockAppConfig);
 
@@ -306,7 +322,8 @@ void main() {
         expect(find.byType(FlutterBlueAppWidget), findsOneWidget);
       });
 
-      testWidgets('should work in different widget contexts', (WidgetTester tester) async {
+      testWidgets('should work in different widget contexts',
+          (WidgetTester tester) async {
         final app = FlutterBlueApp(appConfiguration: mockAppConfig);
 
         // Test in a Scaffold

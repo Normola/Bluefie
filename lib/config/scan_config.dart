@@ -4,7 +4,8 @@ class ScanConfig {
   static const Duration scanDuration = Duration(seconds: 25);
 
   // Location settings
-  static const double minLocationUpdateDistance = 5.0; // meters - reduced for more frequent updates
+  static const double minLocationUpdateDistance =
+      5.0; // meters - reduced for more frequent updates
   static const Duration locationTimeout =
       Duration(seconds: 15); // increased timeout for better accuracy
 
@@ -18,7 +19,9 @@ class ScanConfig {
 
   // Bluetooth settings
   static const bool useAndroidFineLocation = true;
-  static const List<String> requiredServiceUuids = ['180f']; // Battery Level Service
+  static const List<String> requiredServiceUuids = [
+    '180f'
+  ]; // Battery Level Service
 
   // Performance settings
   static const int maxDatabaseRecords = 10000;

@@ -83,30 +83,33 @@ class DataExportService {
   Future<Map<String, dynamic>> _exportDeviceRecords() async {
     try {
       // Get all device records
-      final List<BluetoothDeviceRecord> allDevices = await _databaseHelper.getAllDevices();
-      final List<BluetoothDeviceRecord> uniqueDevices = await _databaseHelper.getUniqueDevices();
+      final List<BluetoothDeviceRecord> allDevices =
+          await _databaseHelper.getAllDevices();
+      final List<BluetoothDeviceRecord> uniqueDevices =
+          await _databaseHelper.getUniqueDevices();
 
       // Convert to JSON-serializable format
       final List<Map<String, dynamic>> allDevicesJson = allDevices
           .map((device) => {
                 ...device.toMap(),
-                'timestamp_iso':
-                    DateTime.fromMillisecondsSinceEpoch(device.timestamp.millisecondsSinceEpoch)
-                        .toIso8601String(),
+                'timestamp_iso': DateTime.fromMillisecondsSinceEpoch(
+                        device.timestamp.millisecondsSinceEpoch)
+                    .toIso8601String(),
               })
           .toList();
 
       final List<Map<String, dynamic>> uniqueDevicesJson = uniqueDevices
           .map((device) => {
                 ...device.toMap(),
-                'timestamp_iso':
-                    DateTime.fromMillisecondsSinceEpoch(device.timestamp.millisecondsSinceEpoch)
-                        .toIso8601String(),
+                'timestamp_iso': DateTime.fromMillisecondsSinceEpoch(
+                        device.timestamp.millisecondsSinceEpoch)
+                    .toIso8601String(),
               })
           .toList();
 
       // Calculate statistics
-      final Map<String, dynamic> statistics = await _calculateDeviceStatistics(allDevices);
+      final Map<String, dynamic> statistics =
+          await _calculateDeviceStatistics(allDevices);
 
       return {
         'total_records': allDevices.length,
@@ -137,7 +140,8 @@ class DataExportService {
     // Date range
     final DateTime earliest =
         devices.map((d) => d.timestamp).reduce((a, b) => a.isBefore(b) ? a : b);
-    final DateTime latest = devices.map((d) => d.timestamp).reduce((a, b) => a.isAfter(b) ? a : b);
+    final DateTime latest =
+        devices.map((d) => d.timestamp).reduce((a, b) => a.isAfter(b) ? a : b);
 
     // RSSI statistics
     final List<int> rssiValues = devices.map((d) => d.rssi).toList();
@@ -148,18 +152,23 @@ class DataExportService {
       'max': rssiValues.last,
       'average': rssiValues.reduce((a, b) => a + b) / rssiValues.length,
       'median': rssiValues.length % 2 == 0
-          ? (rssiValues[rssiValues.length ~/ 2 - 1] + rssiValues[rssiValues.length ~/ 2]) / 2
+          ? (rssiValues[rssiValues.length ~/ 2 - 1] +
+                  rssiValues[rssiValues.length ~/ 2]) /
+              2
           : rssiValues[rssiValues.length ~/ 2],
     };
 
     // Location statistics
-    final List<BluetoothDeviceRecord> devicesWithLocation =
-        devices.where((d) => d.latitude != null && d.longitude != null).toList();
+    final List<BluetoothDeviceRecord> devicesWithLocation = devices
+        .where((d) => d.latitude != null && d.longitude != null)
+        .toList();
     Map<String, dynamic>? locationStats;
 
     if (devicesWithLocation.isNotEmpty) {
-      final List<double> latitudes = devicesWithLocation.map((d) => d.latitude!).toList();
-      final List<double> longitudes = devicesWithLocation.map((d) => d.longitude!).toList();
+      final List<double> latitudes =
+          devicesWithLocation.map((d) => d.latitude!).toList();
+      final List<double> longitudes =
+          devicesWithLocation.map((d) => d.longitude!).toList();
 
       locationStats = {
         'records_with_location': devicesWithLocation.length,
@@ -178,7 +187,8 @@ class DataExportService {
     // Device name statistics
     final Map<String, int> deviceNameCounts = {};
     for (final device in devices) {
-      deviceNameCounts[device.deviceName] = (deviceNameCounts[device.deviceName] ?? 0) + 1;
+      deviceNameCounts[device.deviceName] =
+          (deviceNameCounts[device.deviceName] ?? 0) + 1;
     }
 
     final sortedDeviceNames = deviceNameCounts.entries.toList()
@@ -246,8 +256,10 @@ class DataExportService {
           'latitude': _locationService.currentPosition!.latitude,
           'longitude': _locationService.currentPosition!.longitude,
           'accuracy': _locationService.currentPosition!.accuracy,
-          'timestamp': _locationService.currentPosition!.timestamp.toIso8601String(),
-          'location_string': _locationService.getLocationString(_locationService.currentPosition),
+          'timestamp':
+              _locationService.currentPosition!.timestamp.toIso8601String(),
+          'location_string': _locationService
+              .getLocationString(_locationService.currentPosition),
         };
       }
 
@@ -274,12 +286,14 @@ class DataExportService {
 
   /// Generate a filename with timestamp
   String _generateFilename() {
-    final String timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+    final String timestamp =
+        DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
     return 'blufie_export_$timestamp.json';
   }
 
   /// Write JSON data to file
-  Future<String> _writeJsonToFile(Map<String, dynamic> data, String filename) async {
+  Future<String> _writeJsonToFile(
+      Map<String, dynamic> data, String filename) async {
     try {
       // Get the documents directory
       Directory? directory;
@@ -301,7 +315,8 @@ class DataExportService {
       final File file = File('${directory.path}/$filename');
 
       // Write JSON data with pretty formatting
-      final String jsonString = const JsonEncoder.withIndent('  ').convert(data);
+      final String jsonString =
+          const JsonEncoder.withIndent('  ').convert(data);
       await file.writeAsString(jsonString);
 
       return file.path;

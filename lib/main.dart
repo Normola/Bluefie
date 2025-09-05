@@ -30,7 +30,8 @@ class FlutterBlueApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return FlutterBlueAppWidget(
       bluetoothAdapter: appConfiguration.bluetoothAdapter,
-      navigationObserverFactory: () => appConfiguration.createNavigationObserver(),
+      navigationObserverFactory: () =>
+          appConfiguration.createNavigationObserver(),
     );
   }
 }

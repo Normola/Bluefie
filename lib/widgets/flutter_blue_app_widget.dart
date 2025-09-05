@@ -12,7 +12,8 @@ import '../services/navigation_observer_service.dart';
 /// Accepts dependencies via constructor for easier testing
 class FlutterBlueAppWidget extends StatefulWidget {
   final BluetoothAdapterInterface bluetoothAdapter;
-  final BluetoothNavigationObserverInterface Function() navigationObserverFactory;
+  final BluetoothNavigationObserverInterface Function()
+      navigationObserverFactory;
 
   const FlutterBlueAppWidget({
     super.key,
@@ -37,7 +38,8 @@ class _FlutterBlueAppWidgetState extends State<FlutterBlueAppWidget> {
     _adapterState = widget.bluetoothAdapter.currentState;
 
     // Listen to state changes
-    _adapterStateSubscription = widget.bluetoothAdapter.adapterStateStream.listen((state) {
+    _adapterStateSubscription =
+        widget.bluetoothAdapter.adapterStateStream.listen((state) {
       if (mounted) {
         setState(() {
           _adapterState = state;

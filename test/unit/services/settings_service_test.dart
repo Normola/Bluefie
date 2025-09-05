@@ -33,7 +33,8 @@ void main() {
 
     test('should update auto scanning setting', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(autoScanningEnabled: true);
+      final newSettings =
+          settingsService.currentSettings.copyWith(autoScanningEnabled: true);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -42,7 +43,8 @@ void main() {
 
     test('should update scan interval', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(scanIntervalSeconds: 60);
+      final newSettings =
+          settingsService.currentSettings.copyWith(scanIntervalSeconds: 60);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -64,7 +66,8 @@ void main() {
 
     test('should update location tracking setting', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(locationTrackingEnabled: false);
+      final newSettings = settingsService.currentSettings
+          .copyWith(locationTrackingEnabled: false);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -73,7 +76,8 @@ void main() {
 
     test('should update verbose logging setting', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(verboseLoggingEnabled: true);
+      final newSettings =
+          settingsService.currentSettings.copyWith(verboseLoggingEnabled: true);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -82,7 +86,8 @@ void main() {
 
     test('should update notifications setting', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(showNotifications: false);
+      final newSettings =
+          settingsService.currentSettings.copyWith(showNotifications: false);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -91,7 +96,8 @@ void main() {
 
     test('should update data retention setting', () async {
       // Directly update the setting in memory only
-      final newSettings = settingsService.currentSettings.copyWith(dataRetentionDays: 90);
+      final newSettings =
+          settingsService.currentSettings.copyWith(dataRetentionDays: 90);
       settingsService.updateSettings(newSettings);
 
       // Verify the setting was updated
@@ -112,7 +118,8 @@ void main() {
       });
 
       // Update a setting
-      final newSettings = settingsService.currentSettings.copyWith(autoScanningEnabled: true);
+      final newSettings =
+          settingsService.currentSettings.copyWith(autoScanningEnabled: true);
       settingsService.updateSettings(newSettings);
 
       // Give the stream time to emit

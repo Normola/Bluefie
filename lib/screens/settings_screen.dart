@@ -50,7 +50,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     });
 
-    _batteryLevelSubscription = _batteryService.batteryLevelStream.listen((level) {
+    _batteryLevelSubscription =
+        _batteryService.batteryLevelStream.listen((level) {
       if (!mounted) return;
 
       setState(() {
@@ -250,7 +251,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(),
               ListTile(
                 title: const Text('Battery Threshold'),
-                subtitle: Text('Stop scanning at ${_settings.batteryThresholdPercent}% battery'),
+                subtitle: Text(
+                    'Stop scanning at ${_settings.batteryThresholdPercent}% battery'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -316,7 +318,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             ListTile(
               title: const Text('Data Retention'),
-              subtitle: Text('Keep data for ${_settings.dataRetentionDays} days'),
+              subtitle:
+                  Text('Keep data for ${_settings.dataRetentionDays} days'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showDataRetentionDialog(),
             ),
@@ -396,7 +399,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: currentThreshold,
               isExpanded: true,
               items: [5, 10, 15, 20, 25, 30].map((percent) {
-                return DropdownMenuItem(value: percent, child: Text('$percent%'));
+                return DropdownMenuItem(
+                    value: percent, child: Text('$percent%'));
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -413,7 +417,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () {
-              _settingsService.updateBatteryOptimization(true, currentThreshold);
+              _settingsService.updateBatteryOptimization(
+                  true, currentThreshold);
               Navigator.of(context).pop();
             },
             child: const Text('Save'),
@@ -476,7 +481,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset Settings'),
-        content: const Text('Are you sure you want to reset all settings to their default values?'),
+        content: const Text(
+            'Are you sure you want to reset all settings to their default values?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

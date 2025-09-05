@@ -81,10 +81,14 @@ void main() {
 
         final copiedSettings = originalSettings.copyWith();
 
-        expect(copiedSettings.autoScanningEnabled, originalSettings.autoScanningEnabled);
-        expect(copiedSettings.scanIntervalSeconds, originalSettings.scanIntervalSeconds);
-        expect(copiedSettings.batteryThresholdPercent, originalSettings.batteryThresholdPercent);
-        expect(copiedSettings.verboseLoggingEnabled, originalSettings.verboseLoggingEnabled);
+        expect(copiedSettings.autoScanningEnabled,
+            originalSettings.autoScanningEnabled);
+        expect(copiedSettings.scanIntervalSeconds,
+            originalSettings.scanIntervalSeconds);
+        expect(copiedSettings.batteryThresholdPercent,
+            originalSettings.batteryThresholdPercent);
+        expect(copiedSettings.verboseLoggingEnabled,
+            originalSettings.verboseLoggingEnabled);
       });
 
       test('should handle all parameters in copyWith', () {
@@ -189,7 +193,8 @@ void main() {
         ];
 
         for (final key in expectedKeys) {
-          expect(json.containsKey(key), true, reason: 'JSON should contain key: $key');
+          expect(json.containsKey(key), true,
+              reason: 'JSON should contain key: $key');
         }
       });
     });
@@ -288,18 +293,24 @@ void main() {
         final json = originalSettings.toJson();
         final deserializedSettings = AppSettings.fromJson(json);
 
-        expect(deserializedSettings.autoScanningEnabled, originalSettings.autoScanningEnabled);
-        expect(deserializedSettings.scanIntervalSeconds, originalSettings.scanIntervalSeconds);
-        expect(
-            deserializedSettings.batteryThresholdPercent, originalSettings.batteryThresholdPercent);
-        expect(deserializedSettings.verboseLoggingEnabled, originalSettings.verboseLoggingEnabled);
+        expect(deserializedSettings.autoScanningEnabled,
+            originalSettings.autoScanningEnabled);
+        expect(deserializedSettings.scanIntervalSeconds,
+            originalSettings.scanIntervalSeconds);
+        expect(deserializedSettings.batteryThresholdPercent,
+            originalSettings.batteryThresholdPercent);
+        expect(deserializedSettings.verboseLoggingEnabled,
+            originalSettings.verboseLoggingEnabled);
         expect(deserializedSettings.batteryOptimizationEnabled,
             originalSettings.batteryOptimizationEnabled);
-        expect(deserializedSettings.dataRetentionDays, originalSettings.dataRetentionDays);
-        expect(
-            deserializedSettings.locationTrackingEnabled, originalSettings.locationTrackingEnabled);
-        expect(deserializedSettings.showNotifications, originalSettings.showNotifications);
-        expect(deserializedSettings.autoScanWhenPluggedIn, originalSettings.autoScanWhenPluggedIn);
+        expect(deserializedSettings.dataRetentionDays,
+            originalSettings.dataRetentionDays);
+        expect(deserializedSettings.locationTrackingEnabled,
+            originalSettings.locationTrackingEnabled);
+        expect(deserializedSettings.showNotifications,
+            originalSettings.showNotifications);
+        expect(deserializedSettings.autoScanWhenPluggedIn,
+            originalSettings.autoScanWhenPluggedIn);
       });
     });
 

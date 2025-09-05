@@ -47,7 +47,8 @@ class MockBluetoothAdapter implements BluetoothAdapterInterface {
         _stateController = StreamController<BluetoothAdapterState>.broadcast();
 
   @override
-  Stream<BluetoothAdapterState> get adapterStateStream => _stateController.stream;
+  Stream<BluetoothAdapterState> get adapterStateStream =>
+      _stateController.stream;
 
   @override
   BluetoothAdapterState get currentState => _currentState;

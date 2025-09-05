@@ -77,7 +77,8 @@ void main() {
     });
 
     test('should create from map correctly', () {
-      final timestampMs = DateTime.parse('2025-09-05T14:30:00.000').millisecondsSinceEpoch;
+      final timestampMs =
+          DateTime.parse('2025-09-05T14:30:00.000').millisecondsSinceEpoch;
       final map = {
         'id': 4,
         'deviceId': 'device-004',
@@ -99,7 +100,8 @@ void main() {
       expect(record.deviceName, 'From Map Device');
       expect(record.macAddress, 'FF:EE:DD:CC:BB:AA');
       expect(record.rssi, -80);
-      expect(record.timestamp, DateTime.fromMillisecondsSinceEpoch(timestampMs));
+      expect(
+          record.timestamp, DateTime.fromMillisecondsSinceEpoch(timestampMs));
       expect(record.latitude, 48.8566);
       expect(record.longitude, 2.3522);
       expect(record.manufacturerData, 'Samsung');
@@ -190,8 +192,10 @@ void main() {
       expect(connectableMap['isConnectable'], 1);
       expect(nonConnectableMap['isConnectable'], 0);
 
-      final recreatedConnectable = BluetoothDeviceRecord.fromMap(connectableMap);
-      final recreatedNonConnectable = BluetoothDeviceRecord.fromMap(nonConnectableMap);
+      final recreatedConnectable =
+          BluetoothDeviceRecord.fromMap(connectableMap);
+      final recreatedNonConnectable =
+          BluetoothDeviceRecord.fromMap(nonConnectableMap);
 
       expect(recreatedConnectable.isConnectable, true);
       expect(recreatedNonConnectable.isConnectable, false);
@@ -345,7 +349,8 @@ void main() {
       });
 
       test('should preserve timestamp precision', () {
-        final preciseTimestamp = DateTime.fromMillisecondsSinceEpoch(1725541800123);
+        final preciseTimestamp =
+            DateTime.fromMillisecondsSinceEpoch(1725541800123);
         final record = BluetoothDeviceRecord(
           deviceId: 'precision-test',
           deviceName: 'Precision Test',
@@ -439,7 +444,8 @@ void main() {
         };
 
         final record = BluetoothDeviceRecord.fromMap(epochMap);
-        expect(record.timestamp, equals(DateTime.fromMillisecondsSinceEpoch(0)));
+        expect(
+            record.timestamp, equals(DateTime.fromMillisecondsSinceEpoch(0)));
       });
 
       test('should handle large timestamp values', () {
@@ -454,7 +460,8 @@ void main() {
         };
 
         final record = BluetoothDeviceRecord.fromMap(futureMap);
-        expect(record.timestamp, equals(DateTime.fromMillisecondsSinceEpoch(largeTimestamp)));
+        expect(record.timestamp,
+            equals(DateTime.fromMillisecondsSinceEpoch(largeTimestamp)));
       });
 
       test('should handle decimal coordinates', () {
@@ -495,7 +502,8 @@ void main() {
 
         expect(stringRepresentation, contains('BluetoothDeviceRecord'));
         expect(stringRepresentation, contains('id: 99'));
-        expect(stringRepresentation, contains('deviceName: String Test Device'));
+        expect(
+            stringRepresentation, contains('deviceName: String Test Device'));
         expect(stringRepresentation, contains('macAddress: AA:BB:CC:DD:EE:FF'));
         expect(stringRepresentation, contains('rssi: -55'));
         expect(stringRepresentation, contains('lat: 51.5074'));
@@ -578,8 +586,8 @@ void main() {
 
       test('should handle null values through multiple conversions', () {
         // Use a timestamp with millisecond precision to avoid precision loss
-        final originalTimestamp =
-            DateTime.fromMillisecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch);
+        final originalTimestamp = DateTime.fromMillisecondsSinceEpoch(
+            DateTime.now().millisecondsSinceEpoch);
         var record = BluetoothDeviceRecord(
           deviceId: 'null-roundtrip',
           deviceName: 'Null Roundtrip Test',
@@ -728,7 +736,8 @@ void main() {
 
         // Convert all to maps and back
         final maps = records.map((r) => r.toMap()).toList();
-        final recreatedRecords = maps.map((m) => BluetoothDeviceRecord.fromMap(m)).toList();
+        final recreatedRecords =
+            maps.map((m) => BluetoothDeviceRecord.fromMap(m)).toList();
 
         expect(recreatedRecords.length, equals(100));
         for (int i = 0; i < 100; i++) {

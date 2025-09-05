@@ -18,7 +18,8 @@ class DeviceHistoryScreen extends StatefulWidget {
   State<DeviceHistoryScreen> createState() => _DeviceHistoryScreenState();
 }
 
-class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerProviderStateMixin {
+class _DeviceHistoryScreenState extends State<DeviceHistoryScreen>
+    with TickerProviderStateMixin {
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final LocationService _locationService = LocationService();
   final DataExportService _exportService = DataExportService();
@@ -45,7 +46,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
   }
 
   void _setupStreams() {
-    _deviceCountSubscription = _scanningService.deviceCountStream.listen((count) {
+    _deviceCountSubscription =
+        _scanningService.deviceCountStream.listen((count) {
       if (!mounted) return;
 
       setState(() {
@@ -53,7 +55,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
       });
     });
 
-    _recentDevicesSubscription = _scanningService.recentDevicesStream.listen((devices) {
+    _recentDevicesSubscription =
+        _scanningService.recentDevicesStream.listen((devices) {
       if (!mounted) return;
 
       setState(() {
@@ -112,7 +115,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
               children: [
                 _buildStatItem('Total Scans', _totalDeviceCount.toString()),
                 _buildStatItem('Unique Devices', _uniqueDeviceCount.toString()),
-                _buildStatItem('Scanning', _scanningService.isScanning ? 'Active' : 'Inactive'),
+                _buildStatItem('Scanning',
+                    _scanningService.isScanning ? 'Active' : 'Inactive'),
               ],
             ),
             const SizedBox(height: 16),
@@ -209,12 +213,14 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDetailRow('Device ID', device.deviceId),
-                _buildDetailRow('Connectable', device.isConnectable ? 'Yes' : 'No'),
+                _buildDetailRow(
+                    'Connectable', device.isConnectable ? 'Yes' : 'No'),
                 if (device.latitude != null && device.longitude != null)
                   _buildDetailRow('Location',
                       '${device.latitude!.toStringAsFixed(6)}, ${device.longitude!.toStringAsFixed(6)}'),
                 if (device.manufacturerData != null)
-                  _buildDetailRow('Manufacturer Data', device.manufacturerData!),
+                  _buildDetailRow(
+                      'Manufacturer Data', device.manufacturerData!),
                 if (device.serviceUuids != null)
                   _buildDetailRow('Service UUIDs', device.serviceUuids!),
                 const SizedBox(height: 12),
@@ -363,7 +369,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
               ),
               const PopupMenuItem(
                 value: 'cleanup_old',
-                child: Text('Clean old data (${ScanConfig.cleanupDataRetentionDays}+ days)'),
+                child: Text(
+                    'Clean old data (${ScanConfig.cleanupDataRetentionDays}+ days)'),
               ),
               const PopupMenuItem(
                 value: 'clear_all',
@@ -403,7 +410,8 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
         _showClearDataDialog();
         break;
       case 'cleanup_old':
-        await _scanningService.cleanupOldData(daysToKeep: ScanConfig.cleanupDataRetentionDays);
+        await _scanningService.cleanupOldData(
+            daysToKeep: ScanConfig.cleanupDataRetentionDays);
         _initializeData();
         break;
     }

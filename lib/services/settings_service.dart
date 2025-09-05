@@ -66,10 +66,12 @@ class SettingsService {
     await updateSettings(newSettings);
   }
 
-  Future<void> updateBatteryOptimization(bool enabled, int? thresholdPercent) async {
+  Future<void> updateBatteryOptimization(
+      bool enabled, int? thresholdPercent) async {
     final newSettings = _currentSettings.copyWith(
       batteryOptimizationEnabled: enabled,
-      batteryThresholdPercent: thresholdPercent ?? _currentSettings.batteryThresholdPercent,
+      batteryThresholdPercent:
+          thresholdPercent ?? _currentSettings.batteryThresholdPercent,
     );
     await updateSettings(newSettings);
   }
@@ -85,12 +87,14 @@ class SettingsService {
   }
 
   Future<void> updateLocationTracking(bool enabled) async {
-    final newSettings = _currentSettings.copyWith(locationTrackingEnabled: enabled);
+    final newSettings =
+        _currentSettings.copyWith(locationTrackingEnabled: enabled);
     await updateSettings(newSettings);
   }
 
   Future<void> updateVerboseLogging(bool enabled) async {
-    final newSettings = _currentSettings.copyWith(verboseLoggingEnabled: enabled);
+    final newSettings =
+        _currentSettings.copyWith(verboseLoggingEnabled: enabled);
     await updateSettings(newSettings);
   }
 
@@ -100,7 +104,8 @@ class SettingsService {
   }
 
   Future<void> updateAutoScanWhenPluggedIn(bool enabled) async {
-    final newSettings = _currentSettings.copyWith(autoScanWhenPluggedIn: enabled);
+    final newSettings =
+        _currentSettings.copyWith(autoScanWhenPluggedIn: enabled);
     await updateSettings(newSettings);
   }
 

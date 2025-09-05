@@ -15,7 +15,8 @@ class BatteryMonitorScreen extends StatefulWidget {
   State<BatteryMonitorScreen> createState() => _BatteryMonitorScreenState();
 }
 
-class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with TickerProviderStateMixin {
+class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
+    with TickerProviderStateMixin {
   // Services
   final BatteryService _batteryService = BatteryService();
   final BluetoothScanningService _scanningService = BluetoothScanningService();
@@ -63,17 +64,20 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
     );
 
     _batteryAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _batteryAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+          parent: _batteryAnimationController, curve: Curves.easeInOut),
     );
     _scanningAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _scanningAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+          parent: _scanningAnimationController, curve: Curves.easeInOut),
     );
 
     _batteryAnimationController.forward();
   }
 
   void _setupStreams() {
-    _batteryLevelSubscription = _batteryService.batteryLevelStream.listen((level) {
+    _batteryLevelSubscription =
+        _batteryService.batteryLevelStream.listen((level) {
       setState(() {
         _batteryLevel = level;
       });
@@ -84,11 +88,13 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
         _isLowBattery = isLow;
       });
       if (isLow) {
-        Snackbar.show(ABC.c, 'Low battery detected! Scanning may be limited.', success: false);
+        Snackbar.show(ABC.c, 'Low battery detected! Scanning may be limited.',
+            success: false);
       }
     });
 
-    _chargingStateSubscription = _batteryService.chargingStateStream.listen((isCharging) {
+    _chargingStateSubscription =
+        _batteryService.chargingStateStream.listen((isCharging) {
       setState(() {
         _isCharging = isCharging;
       });
@@ -292,7 +298,8 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
             ),
             child: Row(
               children: [
-                Icon(Icons.electrical_services, color: Colors.green[700], size: 20),
+                Icon(Icons.electrical_services,
+                    color: Colors.green[700], size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -322,7 +329,8 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
                     return Icon(
                       Icons.bluetooth_searching,
                       color: _isScanning
-                          ? Color.lerp(Colors.blue, Colors.blueAccent, _scanningAnimation.value)
+                          ? Color.lerp(Colors.blue, Colors.blueAccent,
+                              _scanningAnimation.value)
                           : Colors.grey,
                       size: 28,
                     );
@@ -427,7 +435,9 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
                 Text(
                   settings.batteryOptimizationEnabled ? 'Yes' : 'No',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: settings.batteryOptimizationEnabled ? Colors.green : Colors.red,
+                        color: settings.batteryOptimizationEnabled
+                            ? Colors.green
+                            : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -460,7 +470,9 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
                 Text(
                   settings.autoScanWhenPluggedIn ? 'Yes' : 'No',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: settings.autoScanWhenPluggedIn ? Colors.green : Colors.grey,
+                        color: settings.autoScanWhenPluggedIn
+                            ? Colors.green
+                            : Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -584,10 +596,13 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen> with Ticker
               ],
             ),
             const SizedBox(height: 16),
-            _buildTip('Enable battery optimization to pause scanning when battery is low'),
+            _buildTip(
+                'Enable battery optimization to pause scanning when battery is low'),
             _buildTip('Use continuous scanning only when necessary'),
-            _buildTip('Keep the device plugged in during extended scanning sessions'),
-            _buildTip('Lower the scan frequency in settings to reduce power consumption'),
+            _buildTip(
+                'Keep the device plugged in during extended scanning sessions'),
+            _buildTip(
+                'Lower the scan frequency in settings to reduce power consumption'),
             _buildTip('Close other apps while scanning to preserve battery'),
           ],
         ),

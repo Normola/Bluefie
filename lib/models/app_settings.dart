@@ -34,14 +34,19 @@ class AppSettings {
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
-      batteryOptimizationEnabled: batteryOptimizationEnabled ?? this.batteryOptimizationEnabled,
-      batteryThresholdPercent: batteryThresholdPercent ?? this.batteryThresholdPercent,
+      batteryOptimizationEnabled:
+          batteryOptimizationEnabled ?? this.batteryOptimizationEnabled,
+      batteryThresholdPercent:
+          batteryThresholdPercent ?? this.batteryThresholdPercent,
       scanIntervalSeconds: scanIntervalSeconds ?? this.scanIntervalSeconds,
       dataRetentionDays: dataRetentionDays ?? this.dataRetentionDays,
-      locationTrackingEnabled: locationTrackingEnabled ?? this.locationTrackingEnabled,
-      verboseLoggingEnabled: verboseLoggingEnabled ?? this.verboseLoggingEnabled,
+      locationTrackingEnabled:
+          locationTrackingEnabled ?? this.locationTrackingEnabled,
+      verboseLoggingEnabled:
+          verboseLoggingEnabled ?? this.verboseLoggingEnabled,
       showNotifications: showNotifications ?? this.showNotifications,
-      autoScanWhenPluggedIn: autoScanWhenPluggedIn ?? this.autoScanWhenPluggedIn,
+      autoScanWhenPluggedIn:
+          autoScanWhenPluggedIn ?? this.autoScanWhenPluggedIn,
     );
   }
 

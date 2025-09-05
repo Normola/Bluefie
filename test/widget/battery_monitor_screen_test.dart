@@ -31,7 +31,8 @@ void main() {
       expect(find.text('Power Saving Tips'), findsOneWidget);
     });
 
-    testWidgets('should show refresh functionality', (WidgetTester tester) async {
+    testWidgets('should show refresh functionality',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: BatteryMonitorScreen(),
@@ -49,7 +50,8 @@ void main() {
       expect(find.byType(BatteryMonitorScreen), findsOneWidget);
     });
 
-    testWidgets('should display battery level indicator', (WidgetTester tester) async {
+    testWidgets('should display battery level indicator',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: BatteryMonitorScreen(),
@@ -76,7 +78,9 @@ void main() {
 
       // Verify power saving tips are shown
       expect(find.text('Power Saving Tips'), findsOneWidget);
-      expect(find.text('Enable battery optimization to pause scanning when battery is low'),
+      expect(
+          find.text(
+              'Enable battery optimization to pause scanning when battery is low'),
           findsOneWidget);
     });
 

@@ -31,7 +31,8 @@ extension _StreamNewStreamWithInitialValue<T> on Stream<T> {
   }
 }
 
-class _NewStreamWithInitialValueTransformer<T> extends StreamTransformerBase<T, T> {
+class _NewStreamWithInitialValueTransformer<T>
+    extends StreamTransformerBase<T, T> {
   final T initialValue;
 
   late StreamController<T> controller;

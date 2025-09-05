@@ -17,14 +17,16 @@ void main() {
       });
 
       test('should create with adapter state parameter', () {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         expect(screen.adapterState, equals(BluetoothAdapterState.off));
       });
 
       test('should create with key parameter', () {
         const key = Key('test-key');
-        const screen = BluetoothOffScreen(key: key, adapterState: BluetoothAdapterState.unknown);
+        const screen = BluetoothOffScreen(
+            key: key, adapterState: BluetoothAdapterState.unknown);
 
         expect(screen.key, equals(key));
         expect(screen.adapterState, equals(BluetoothAdapterState.unknown));
@@ -59,19 +61,22 @@ void main() {
         expect(find.byType(ScaffoldMessenger), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('should display bluetooth disabled icon', (WidgetTester tester) async {
+      testWidgets('should display bluetooth disabled icon',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         expect(find.byIcon(Icons.bluetooth_disabled), findsOneWidget);
 
-        final iconWidget = tester.widget<Icon>(find.byIcon(Icons.bluetooth_disabled));
+        final iconWidget =
+            tester.widget<Icon>(find.byIcon(Icons.bluetooth_disabled));
         expect(iconWidget.color, equals(Colors.white54));
         expect(iconWidget.size, equals(200.0));
       });
 
-      testWidgets('should have correct background color', (WidgetTester tester) async {
+      testWidgets('should have correct background color',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
@@ -80,7 +85,8 @@ void main() {
         expect(scaffold.backgroundColor, equals(Colors.lightBlue));
       });
 
-      testWidgets('should display centered column layout', (WidgetTester tester) async {
+      testWidgets('should display centered column layout',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
@@ -94,7 +100,8 @@ void main() {
     });
 
     group('Title Display Tests', () {
-      testWidgets('should display title with null adapter state', (WidgetTester tester) async {
+      testWidgets('should display title with null adapter state',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
@@ -102,16 +109,20 @@ void main() {
         expect(find.text('Bluetooth Adapter is null'), findsOneWidget);
       });
 
-      testWidgets('should display title with off adapter state', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should display title with off adapter state',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         expect(find.text('Bluetooth Adapter is off'), findsOneWidget);
       });
 
-      testWidgets('should display title with unknown adapter state', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.unknown);
+      testWidgets('should display title with unknown adapter state',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.unknown);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -120,7 +131,8 @@ void main() {
 
       testWidgets('should display title with unavailable adapter state',
           (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.unavailable);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.unavailable);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -129,15 +141,18 @@ void main() {
 
       testWidgets('should display title with unauthorized adapter state',
           (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.unauthorized);
+        const screen = BluetoothOffScreen(
+            adapterState: BluetoothAdapterState.unauthorized);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         expect(find.text('Bluetooth Adapter is unauthorized'), findsOneWidget);
       });
 
-      testWidgets('should display title with turningOn adapter state', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.turningOn);
+      testWidgets('should display title with turningOn adapter state',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.turningOn);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -146,41 +161,50 @@ void main() {
 
       testWidgets('should display title with turningOff adapter state',
           (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.turningOff);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.turningOff);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         expect(find.text('Bluetooth Adapter is turningOff'), findsOneWidget);
       });
 
-      testWidgets('should display title with on adapter state', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.on);
+      testWidgets('should display title with on adapter state',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.on);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         expect(find.text('Bluetooth Adapter is on'), findsOneWidget);
       });
 
-      testWidgets('should use correct text styling for title', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should use correct text styling for title',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(MaterialApp(
           theme: ThemeData(
             primaryTextTheme: const TextTheme(
-              titleSmall: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+              titleSmall:
+                  TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
             ),
           ),
           home: screen,
         ));
 
-        final titleText = tester.widget<Text>(find.text('Bluetooth Adapter is off'));
+        final titleText =
+            tester.widget<Text>(find.text('Bluetooth Adapter is off'));
         expect(titleText.style?.color, equals(Colors.white));
       });
     });
 
     group('Platform-Specific Button Tests', () {
-      testWidgets('should show turn on button on Android', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should show turn on button on Android',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -194,8 +218,10 @@ void main() {
         }
       });
 
-      testWidgets('should have correct button styling', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should have correct button styling',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -212,7 +238,8 @@ void main() {
     });
 
     group('Component Widget Tests', () {
-      testWidgets('buildBluetoothOffIcon should create correct icon', (WidgetTester tester) async {
+      testWidgets('buildBluetoothOffIcon should create correct icon',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(MaterialApp(
@@ -232,7 +259,8 @@ void main() {
 
       testWidgets('buildTitle should create correct text for different states',
           (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(MaterialApp(
           home: Scaffold(
@@ -245,7 +273,8 @@ void main() {
         expect(find.text('Bluetooth Adapter is off'), findsOneWidget);
       });
 
-      testWidgets('buildTurnOnButton should create correct button', (WidgetTester tester) async {
+      testWidgets('buildTurnOnButton should create correct button',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(MaterialApp(
@@ -268,13 +297,14 @@ void main() {
     });
 
     group('Snackbar Integration Tests', () {
-      testWidgets('should have correct snackbar key configured', (WidgetTester tester) async {
+      testWidgets('should have correct snackbar key configured',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
-        final scaffoldMessengers =
-            tester.widgetList<ScaffoldMessenger>(find.byType(ScaffoldMessenger));
+        final scaffoldMessengers = tester
+            .widgetList<ScaffoldMessenger>(find.byType(ScaffoldMessenger));
 
         // Find the one with the snackbar key
         final screenScaffoldMessenger = scaffoldMessengers.firstWhere(
@@ -283,7 +313,8 @@ void main() {
         expect(screenScaffoldMessenger.key, equals(Snackbar.snackBarKeyA));
       });
 
-      testWidgets('should be ready to display snackbars', (WidgetTester tester) async {
+      testWidgets('should be ready to display snackbars',
+          (WidgetTester tester) async {
         const screen = BluetoothOffScreen();
 
         await tester.pumpWidget(const MaterialApp(home: screen));
@@ -295,8 +326,10 @@ void main() {
     });
 
     group('Layout and Styling Tests', () {
-      testWidgets('should have correct widget hierarchy', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should have correct widget hierarchy',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -309,18 +342,23 @@ void main() {
         expect(find.textContaining('Bluetooth Adapter is'), findsOneWidget);
       });
 
-      testWidgets('should maintain consistent spacing', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should maintain consistent spacing',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
         final column = tester.widget<Column>(find.byType(Column));
         expect(column.mainAxisSize, equals(MainAxisSize.min));
-        expect(column.children.length, greaterThanOrEqualTo(2)); // Icon and title always present
+        expect(column.children.length,
+            greaterThanOrEqualTo(2)); // Icon and title always present
       });
 
-      testWidgets('should handle different screen sizes', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should handle different screen sizes',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         // Test with different screen sizes
         await tester.binding.setSurfaceSize(const Size(400, 600));
@@ -348,8 +386,10 @@ void main() {
       });
 
       test('should maintain immutability', () {
-        const screen1 = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
-        const screen2 = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen1 =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen2 =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         expect(screen1.adapterState, equals(screen2.adapterState));
       });
@@ -362,8 +402,10 @@ void main() {
     });
 
     group('Edge Cases and Error Handling', () {
-      testWidgets('should handle theme changes gracefully', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should handle theme changes gracefully',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         // Test with light theme
         await tester.pumpWidget(MaterialApp(
@@ -380,8 +422,10 @@ void main() {
         expect(find.byType(BluetoothOffScreen), findsOneWidget);
       });
 
-      testWidgets('should handle missing theme gracefully', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+      testWidgets('should handle missing theme gracefully',
+          (WidgetTester tester) async {
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(MaterialApp(
           theme: ThemeData(primaryTextTheme: const TextTheme()),
@@ -392,9 +436,11 @@ void main() {
         expect(find.textContaining('Bluetooth Adapter is'), findsOneWidget);
       });
 
-      testWidgets('should maintain functionality with different MaterialApp configurations',
+      testWidgets(
+          'should maintain functionality with different MaterialApp configurations',
           (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.unknown);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.unknown);
 
         // Test with different MaterialApp configurations
         await tester.pumpWidget(const MaterialApp(
@@ -413,7 +459,8 @@ void main() {
 
     group('Accessibility Tests', () {
       testWidgets('should be accessible', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -424,13 +471,15 @@ void main() {
         if (Platform.isAndroid) {
           expect(find.text('Turn On Bluetooth'), findsOneWidget);
 
-          final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+          final button =
+              tester.widget<ElevatedButton>(find.byType(ElevatedButton));
           expect(button.onPressed, isNotNull);
         }
       });
 
       testWidgets('should have semantic labels', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
@@ -444,7 +493,8 @@ void main() {
 
     group('Performance Tests', () {
       testWidgets('should build quickly', (WidgetTester tester) async {
-        const screen = BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
+        const screen =
+            BluetoothOffScreen(adapterState: BluetoothAdapterState.off);
 
         final stopwatch = Stopwatch()..start();
 
@@ -460,7 +510,9 @@ void main() {
       testWidgets('should handle rapid rebuilds', (WidgetTester tester) async {
         for (int i = 0; i < 10; i++) {
           final screen = BluetoothOffScreen(
-            adapterState: i % 2 == 0 ? BluetoothAdapterState.off : BluetoothAdapterState.unknown,
+            adapterState: i % 2 == 0
+                ? BluetoothAdapterState.off
+                : BluetoothAdapterState.unknown,
           );
 
           await tester.pumpWidget(MaterialApp(home: screen));

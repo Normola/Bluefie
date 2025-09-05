@@ -21,7 +21,8 @@ class DeviceLocationMapScreen extends StatefulWidget {
   });
 
   @override
-  State<DeviceLocationMapScreen> createState() => _DeviceLocationMapScreenState();
+  State<DeviceLocationMapScreen> createState() =>
+      _DeviceLocationMapScreenState();
 }
 
 class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
@@ -48,11 +49,13 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
       });
 
       // Get all detections for this device
-      final detections = await _databaseHelper.getDevicesByMacAddress(widget.macAddress);
+      final detections =
+          await _databaseHelper.getDevicesByMacAddress(widget.macAddress);
 
       // Filter out detections without location data
-      final detectionsWithLocation =
-          detections.where((d) => d.latitude != null && d.longitude != null).toList();
+      final detectionsWithLocation = detections
+          .where((d) => d.latitude != null && d.longitude != null)
+          .toList();
 
       if (detectionsWithLocation.isEmpty) {
         setState(() {
@@ -102,7 +105,8 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
 
       // Calculate center location (most recent detection)
       final mostRecent = detectionsWithLocation.first;
-      final centerLocation = LatLng(mostRecent.latitude!, mostRecent.longitude!);
+      final centerLocation =
+          LatLng(mostRecent.latitude!, mostRecent.longitude!);
 
       setState(() {
         _deviceDetections = detectionsWithLocation;
@@ -150,7 +154,8 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
 
   Duration _getTotalTimeSpan() {
     if (_deviceDetections.length < 2) return Duration.zero;
-    return _deviceDetections.first.timestamp.difference(_deviceDetections.last.timestamp);
+    return _deviceDetections.first.timestamp
+        .difference(_deviceDetections.last.timestamp);
   }
 
   String _formatDuration(Duration duration) {
@@ -200,9 +205,10 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
             const SizedBox(height: 16),
             _buildDetailRow('Device Name', detection.deviceName),
             _buildDetailRow('MAC Address', detection.macAddress),
-            _buildDetailRow(
-                'RSSI', '${detection.rssi} dBm (${_getRssiDescription(detection.rssi)})'),
-            _buildDetailRow('Signal Range', '$maxRssi to $minRssi dBm across all detections'),
+            _buildDetailRow('RSSI',
+                '${detection.rssi} dBm (${_getRssiDescription(detection.rssi)})'),
+            _buildDetailRow('Signal Range',
+                '$maxRssi to $minRssi dBm across all detections'),
             _buildDetailRow('Time', _dateFormatter.format(detection.timestamp)),
             _buildDetailRow('Location',
                 '${detection.latitude!.toStringAsFixed(6)}, ${detection.longitude!.toStringAsFixed(6)}'),
@@ -210,7 +216,8 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
               _buildDetailRow('Manufacturer Data', detection.manufacturerData!),
             if (detection.serviceUuids != null)
               _buildDetailRow('Service UUIDs', detection.serviceUuids!),
-            _buildDetailRow('Connectable', detection.isConnectable ? 'Yes' : 'No'),
+            _buildDetailRow(
+                'Connectable', detection.isConnectable ? 'Yes' : 'No'),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -275,7 +282,10 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
             Text(
               '${_deviceDetections.length} detections',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
                   ),
             ),
           ],
@@ -333,7 +343,8 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.example.blufie',
                         ),
                         MarkerLayer(
@@ -344,11 +355,15 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                             polylines: [
                               Polyline(
                                 points: _deviceDetections
-                                    .map((d) => LatLng(d.latitude!, d.longitude!))
+                                    .map((d) =>
+                                        LatLng(d.latitude!, d.longitude!))
                                     .toList(),
                                 strokeWidth: 2.0,
-                                color: Theme.of(context).primaryColor.withOpacity(0.6),
-                                pattern: StrokePattern.dashed(segments: const [5.0, 5.0]),
+                                color: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.6),
+                                pattern: StrokePattern.dashed(
+                                    segments: const [5.0, 5.0]),
                               ),
                             ],
                           ),
@@ -368,11 +383,13 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                               Row(
                                 children: [
                                   Icon(Icons.analytics_outlined,
-                                      size: 16, color: Theme.of(context).primaryColor),
+                                      size: 16,
+                                      color: Theme.of(context).primaryColor),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Movement Summary',
-                                    style: Theme.of(context).textTheme.titleSmall,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
                                   ),
                                 ],
                               ),
@@ -383,22 +400,30 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                                   final distance = snapshot.data ?? 0.0;
                                   final timeSpan = _getTotalTimeSpan();
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '${_deviceDetections.length} detections • ${_formatDistance(distance)} total movement',
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
                                       ),
                                       Text(
                                         'From ${_dateFormatter.format(_deviceDetections.last.timestamp)} '
                                         'to ${_dateFormatter.format(_deviceDetections.first.timestamp)} '
                                         '(${_formatDuration(timeSpan)})',
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
                                       ),
                                       if (_markers.length > 1)
                                         Text(
                                           'Red markers = oldest, Green = newest • Dashed line shows movement path',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
                                                 fontStyle: FontStyle.italic,
                                               ),
                                         ),

@@ -112,6 +112,20 @@ class DatabaseHelper {
     });
   }
 
+  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(String macAddress) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'bluetooth_devices',
+      where: 'macAddress = ?',
+      whereArgs: [macAddress],
+      orderBy: 'timestamp DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return BluetoothDeviceRecord.fromMap(maps[i]);
+    });
+  }
+
   Future<int> getDeviceCount() async {
     final db = await database;
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM bluetooth_devices');

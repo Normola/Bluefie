@@ -6,7 +6,8 @@ import '../services/bluetooth_scanning_service.dart';
 import '../services/location_service.dart';
 import '../services/data_export_service.dart';
 import '../config/scan_config.dart';
-import  '../services/logging_service.dart';
+import '../services/logging_service.dart';
+import 'device_location_map_screen.dart';
 
 class DeviceHistoryScreen extends StatefulWidget {
   const DeviceHistoryScreen({super.key});
@@ -187,6 +188,18 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
             ),
           ),
         ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (device.latitude != null && device.longitude != null)
+              IconButton(
+                icon: const Icon(Icons.map),
+                onPressed: () => _openDeviceMap(device),
+                tooltip: 'View locations on map',
+              ),
+            const Icon(Icons.expand_more),
+          ],
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -201,10 +214,62 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
                   _buildDetailRow('Manufacturer Data', device.manufacturerData!),
                 if (device.serviceUuids != null)
                   _buildDetailRow('Service UUIDs', device.serviceUuids!),
+                const SizedBox(height: 12),
+                if (device.latitude != null && device.longitude != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openDeviceMap(device),
+                      icon: const Icon(Icons.map),
+                      label: const Text('View All Locations'),
+                    ),
+                  ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openDeviceMap(BluetoothDeviceRecord device) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DeviceLocationMapScreen(
+          deviceName: device.deviceName,
+          macAddress: device.macAddress,
+        ),
+      ),
+    );
+  }
+
+  void _showAllDeviceLocationsMap() {
+    // Find the device with the most recent location data
+    BluetoothDeviceRecord? deviceWithLocation;
+    for (final device in _uniqueDevices) {
+      if (device.latitude != null && device.longitude != null) {
+        deviceWithLocation = device;
+        break;
+      }
+    }
+    
+    if (deviceWithLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No devices with location data found'),
+        ),
+      );
+      return;
+    }
+
+    // For now, open the most recent device with location data
+    // In the future, this could open a combined map view
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DeviceLocationMapScreen(
+          deviceName: 'All Devices', 
+          macAddress: deviceWithLocation!.macAddress,
+        ),
       ),
     );
   }
@@ -273,6 +338,9 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
           PopupMenuButton<String>(
             onSelected: (value) async {
               switch (value) {
+                case 'view_all_locations':
+                  _showAllDeviceLocationsMap();
+                  break;
                 case 'export_data':
                   _showExportDialog();
                   break;
@@ -286,6 +354,16 @@ class _DeviceHistoryScreenState extends State<DeviceHistoryScreen> with TickerPr
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'view_all_locations',
+                child: Row(
+                  children: [
+                    Icon(Icons.map),
+                    SizedBox(width: 8),
+                    Text('View All Locations'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'export_data',
                 child: Row(

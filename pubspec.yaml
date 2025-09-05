@@ -45,6 +45,8 @@ dependencies:
   logger: ^2.4.0
   path_provider: ^2.1.4
   share_plus: ^10.1.1
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

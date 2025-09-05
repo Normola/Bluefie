@@ -269,6 +269,10 @@ class BluetoothScanningService {
     return await _databaseHelper.getUniqueDevices();
   }
 
+  Future<List<BluetoothDeviceRecord>> getDevicesByMacAddress(String macAddress) async {
+    return await _databaseHelper.getDevicesByMacAddress(macAddress);
+  }
+
   Future<int> getTotalDeviceCount() async {
     return await _databaseHelper.getDeviceCount();
   }

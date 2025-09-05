@@ -232,6 +232,28 @@ if (isValid) {
 
 This project is licensed under the BSD-style license found in the LICENSE file.
 Simple UI for Blufie
+## Development
+
+### Code Formatting
+This project uses automatic code formatting to maintain consistent code style.
+
+**Pre-commit Hook**: A pre-commit hook automatically runs `dart format` on all staged Dart files before each commit. This ensures all committed code follows consistent formatting standards.
+
+- Hook files are located in `.git/hooks/`
+- Setup scripts are available in `scripts/`
+- The hook runs automatically - no manual intervention required
+- To bypass (not recommended): `git commit --no-verify`
+
+For detailed information, see: 📖 **[Pre-commit Hook Setup Guide](docs/PRE_COMMIT_HOOK_SETUP.md)**
+
+### Manual Formatting
+To manually format all Dart files:
+```bash
+dart format .
+```
+
+### CI/CD Pipeline
+Comprehensive CI/CD pipeline with automated formatting checks, testing, and building. See the [GitHub Actions Setup Guide](docs/GITHUB_ACTIONS_SETUP.md) for details.
 
 ## Getting Started
 

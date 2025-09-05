@@ -81,7 +81,7 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -285,7 +285,7 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.7),
+                        .withValues(alpha: 0.7),
                   ),
             ),
           ],
@@ -361,7 +361,7 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
                                 strokeWidth: 2.0,
                                 color: Theme.of(context)
                                     .primaryColor
-                                    .withOpacity(0.6),
+                                    .withValues(alpha: 0.6),
                                 pattern: StrokePattern.dashed(
                                     segments: const [5.0, 5.0]),
                               ),

@@ -733,11 +733,11 @@ class BatteryChartPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final scanningPaint = Paint()
-      ..color = Colors.green.withOpacity(0.3)
+      ..color = Colors.green.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     final chargingPaint = Paint()
-      ..color = Colors.orange.withOpacity(0.3)
+      ..color = Colors.orange.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     // Draw battery level line
@@ -779,7 +779,7 @@ class BatteryChartPainter extends CustomPainter {
 
     // Draw grid lines
     final gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.3)
+      ..color = Colors.grey.withValues(alpha: 0.3)
       ..strokeWidth = 1;
 
     for (int i = 0; i <= 4; i++) {

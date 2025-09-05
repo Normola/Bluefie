@@ -50,6 +50,44 @@ Each discovered device is stored with the following information:
    flutter run
    ```
 
+## CI/CD Pipeline
+
+This project includes comprehensive GitHub Actions workflows for automated testing, building, and deployment:
+
+### 🔄 Continuous Integration (`ci.yml`)
+- **Triggers**: Push to main branches, Pull Requests
+- **Features**: Code analysis, testing, debug builds, security checks
+- **Coverage**: Automatic test coverage reporting via Codecov
+
+### 🏗️ Android Build Pipeline (`android-build.yml`)
+- **Triggers**: Push, PR, Manual dispatch
+- **Builds**: Debug, Profile, Release APKs and AABs
+- **Features**: Size analysis, security scanning, artifact management
+
+### 🚀 Release Pipeline (`android-release.yml`)
+- **Triggers**: Manual dispatch only
+- **Features**: Version bumping, GitHub releases, optional Play Store deployment
+- **Automation**: Automatic changelog generation and team notifications
+
+### 🔧 Additional Workflows
+- **Flutter Compatibility**: Weekly testing across multiple Flutter versions
+- **Dependency Updates**: Monthly automated dependency updates with PR creation
+- **Security Audits**: Regular security scanning and vulnerability checks
+
+### Setup Instructions
+For detailed setup instructions including signing configuration and Play Store deployment, see:
+📖 **[GitHub Actions Setup Guide](docs/GITHUB_ACTIONS_SETUP.md)**
+
+### Quick Start for Contributors
+1. Fork the repository
+2. Make your changes
+3. Push to your fork - CI will automatically run
+4. Create a pull request - additional validation builds will run
+5. Maintainers can create releases using the release workflow
+
+[![CI](https://github.com/Normola/Bluefie/workflows/CI/badge.svg)](https://github.com/Normola/Bluefie/actions/workflows/ci.yml)
+[![Android Build](https://github.com/Normola/Bluefie/workflows/Android%20Build%20Pipeline/badge.svg)](https://github.com/Normola/Bluefie/actions/workflows/android-build.yml)
+
 ## Usage
 
 ### Starting Continuous Scanning

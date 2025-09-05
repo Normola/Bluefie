@@ -1,0 +1,263 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Release notes'
+        required: false
+        type: string
+      deploy_to_play_store:
+        description: 'Deploy to Google Play Store'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+  JAVA_VERSION: '11'
+
+jobs:
+  version-bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //')
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.current_version }}"
+          VERSION_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+
+          IFS='.' read -ra VERSION_PARTS <<< "$VERSION_NUMBER"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+
+          case "${{ github.event.inputs.version_bump }}" in
+            "major")
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            "minor")
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            "patch")
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH+$NEW_BUILD_NUMBER"
+
+          sed -i "s/^version:.*/version: $NEW_VERSION/" pubspec.yaml
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git push
+
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: version-bump
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Setup signing (if keystore available)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Setting up release signing..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
+            cat > android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=keystore.jks
+          EOF
+          else
+            echo "Warning: No keystore found. Building with debug signing."
+          fi
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Build release AAB
+        run: flutter build appbundle --release
+
+      - name: Create release notes
+        run: |
+          echo "# Release Notes for ${{ needs.version-bump.outputs.new_version }}" > release_notes.md
+          echo "" >> release_notes.md
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            echo "${{ github.event.inputs.release_notes }}" >> release_notes.md
+          else
+            echo "- Bug fixes and improvements" >> release_notes.md
+          fi
+          echo "" >> release_notes.md
+          echo "Built with Flutter ${{ env.FLUTTER_VERSION }}" >> release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.version-bump.outputs.new_version }}
+          name: Release ${{ needs.version-bump.outputs.new_version }}
+          body_path: release_notes.md
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-${{ needs.version-bump.outputs.new_version }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab-${{ needs.version-bump.outputs.new_version }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+  deploy-play-store:
+    name: Deploy to Google Play Store
+    runs-on: ubuntu-latest
+    needs: [version-bump, build-release]
+    if: github.event.inputs.deploy_to_play_store == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab-${{ needs.version-bump.outputs.new_version }}
+          path: ./
+
+      - name: Setup Google Play CLI
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > service-account.json
+          else
+            echo "Warning: Google Play service account not configured"
+            exit 1
+          fi
+
+      - name: Upload to Google Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: service-account.json
+          packageName: uk.co.undergroundbunker.blufie_ui
+          releaseFiles: app-release.aab
+          track: internal
+          status: completed
+          inAppUpdatePriority: 2
+          userFraction: 0.33
+          whatsNewDirectory: ./
+          mappingFile: build/app/outputs/mapping/release/mapping.txt
+
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [version-bump, build-release, deploy-play-store]
+    if: always()
+
+    steps:
+      - name: Create notification
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.version-bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status**: ${{ needs.build-release.result }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.deploy_to_play_store }}" == "true" ]; then
+            echo "- **Play Store Deployment**: ${{ needs.deploy-play-store.result }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Play Store Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Release ${{ needs.version-bump.outputs.new_version }} has been built and published!`
+            });

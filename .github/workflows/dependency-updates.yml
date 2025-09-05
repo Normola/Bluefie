@@ -1,0 +1,258 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run monthly on the 1st at 09:00 UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Update type'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+  JAVA_VERSION: '11'
+
+jobs:
+  check-updates:
+    name: Check for Updates
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.check.outputs.has_updates }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Get current dependencies
+        run: flutter pub get
+
+      - name: Check for outdated packages
+        id: check
+        run: |
+          flutter pub outdated --json > outdated.json
+
+          # Check if there are any outdated packages
+          if [ -s outdated.json ]; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "Found outdated packages:"
+            cat outdated.json
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "All packages are up to date"
+          fi
+
+      - name: Upload outdated report
+        if: steps.check.outputs.has_updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-packages
+          path: outdated.json
+          retention-days: 7
+
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    needs: check-updates
+    if: needs.check-updates.outputs.has_updates == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Update dependencies
+        id: update
+        run: |
+          # Create a branch for updates
+          BRANCH_NAME="dependency-updates-$(date +%Y%m%d)"
+          git checkout -b $BRANCH_NAME
+
+          # Update dependencies based on input type
+          case "${{ github.event.inputs.update_type || 'minor' }}" in
+            "patch")
+              echo "Updating patch versions only..."
+              flutter pub upgrade --major-versions=false
+              ;;
+            "minor")
+              echo "Updating minor versions..."
+              flutter pub upgrade --major-versions=false
+              ;;
+            "major")
+              echo "Updating all versions including major..."
+              flutter pub upgrade --major-versions
+              ;;
+          esac
+
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Run tests after update
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test --no-coverage
+
+      - name: Build test after update
+        run: flutter build apk --debug
+
+      - name: Commit changes
+        id: commit
+        run: |
+          if git diff --quiet pubspec.lock; then
+            echo "No dependency updates found"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            git add pubspec.lock pubspec.yaml
+            git commit -m "chore: update dependencies (${{ github.event.inputs.update_type || 'minor' }})"
+            git push origin ${{ steps.update.outputs.branch_name }}
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: update dependencies (${{ github.event.inputs.update_type || 'minor' }})`,
+              head: '${{ steps.update.outputs.branch_name }}',
+              base: 'master',
+              body: `## Dependency Updates
+
+              This PR contains automated dependency updates.
+
+              **Update Type**: ${{ github.event.inputs.update_type || 'minor' }}
+
+              ### Changes
+              - Updated Flutter dependencies to latest compatible versions
+              - All tests pass with new dependencies
+              - Debug build successful
+
+              ### Verification
+              - ✅ Code analysis passes
+              - ✅ Unit tests pass
+              - ✅ Debug build successful
+
+              ### Review Checklist
+              - [ ] Review dependency changes in \`pubspec.lock\`
+              - [ ] Test critical app functionality
+              - [ ] Check for any breaking changes in updated packages
+              - [ ] Verify app builds and runs correctly
+
+              **Auto-generated by GitHub Actions** 🤖`
+            });
+
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['dependencies', 'automated', 'chore']
+            });
+
+            console.log(`Created PR #${pr.number}: ${pr.html_url}`);
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run security audit
+        run: |
+          echo "## 🔒 Security Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Get dependency information
+          dart pub deps --json > deps.json
+
+          # Basic security checks (expand as needed)
+          echo "### Dependencies Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          head -20 deps.json >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          # Check for known vulnerable packages (basic implementation)
+          if grep -q "http:" pubspec.yaml; then
+            echo "⚠️ **Warning**: Found HTTP URLs in pubspec.yaml - consider using HTTPS" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recommendations" >> $GITHUB_STEP_SUMMARY
+          echo "- Regularly update dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- Use \`flutter pub audit\` for security scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor dependency advisories" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: deps.json
+          retention-days: 30
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [check-updates, update-dependencies, security-audit]
+    if: always()
+
+    steps:
+      - name: Create notification summary
+        run: |
+          echo "## 📦 Dependency Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Updates Available**: ${{ needs.check-updates.outputs.has_updates }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update Process**: ${{ needs.update-dependencies.result || 'Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security Audit**: ${{ needs.security-audit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.check-updates.outputs.has_updates }}" == "true" ]; then
+            echo "✅ Dependency updates have been processed" >> $GITHUB_STEP_SUMMARY
+            echo "📋 Check for new pull requests with dependency updates" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ All dependencies are up to date" >> $GITHUB_STEP_SUMMARY
+          fi

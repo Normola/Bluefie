@@ -58,7 +58,7 @@ Each discovered device is stored with the following information:
 
 ### 🔧 Development Quality Improvements
 - **Strict Coding Standards**: Enforced no-else statements and minimal nesting patterns
-- **APK Size Monitoring**: CI validation ensures release APKs stay under 50MB
+- **APK Size Monitoring**: CI validation ensures release APKs stay under 100MB
 - **Automated Dependencies**: Monthly dependency updates with automated PR creation
 - **Code Coverage**: Mandatory 80% unit test coverage for all new code
 

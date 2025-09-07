@@ -1,0 +1,13 @@
+{
+  "13": "Limited Discoverable Mode",
+  "14": "LE audio",
+  "15": "Reserved for Future Use",
+  "16": "Positioning (Location identification)",
+  "17": "Networking (LAN, Ad hoc, ...)",
+  "18": "Rendering (Printing, Speakers, ...)",
+  "19": "Capturing (Scanner, Microphone, ...)",
+  "20": "Object Transfer (v-Inbox, v-Folder, ...)",
+  "21": "Audio (Speaker, Microphone, Headset service, ...)",
+  "22": "Telephony (Cordless telephony, Modem, Headset service, ...)",
+  "23": "Information (WEB-server, WAP-server, ...)"
+}

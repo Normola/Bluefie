@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:yaml/yaml.dart';
 
 /// Service for managing Bluetooth SIG (Special Interest Group) assigned numbers
 /// including services, characteristics, company identifiers, etc.
@@ -137,53 +136,107 @@ class SigService {
     '2a55': 'SC Control Point',
   };
 
-  // Remote repository URLs (when available)
-  static const String _baseUrl =
-      'https://bitbucket.org/bluetooth-SIG/public/raw/main/assigned_numbers';
-  static const String _servicesUrl = '$_baseUrl/service_uuids.yaml';
-  static const String _characteristicsUrl =
-      '$_baseUrl/characteristic_uuids.yaml';
-  static const String _descriptorsUrl = '$_baseUrl/descriptor_uuids.yaml';
-  static const String _companyIdentifiersUrl =
-      '$_baseUrl/company_identifiers.yaml';
-
   // Local file names for caching
   static const String _servicesFileName = 'sig_services.json';
   static const String _characteristicsFileName = 'sig_characteristics.json';
   static const String _descriptorsFileName = 'sig_descriptors.json';
   static const String _companyIdentifiersFileName =
       'sig_company_identifiers.json';
+  // Additional enhanced data files
+  static const String _memberUuidsFileName = 'sig_member_uuids.json';
+  static const String _appearanceValuesFileName = 'sig_appearance_values.json';
+  static const String _adTypesFileName = 'sig_ad_types.json';
+  static const String _codingFormatsFileName = 'sig_coding_formats.json';
+  static const String _meshBeaconsFileName = 'sig_mesh_beacons.json';
+  static const String _uriSchemesFileName = 'sig_uri_schemes.json';
+  static const String _diacsFileName = 'sig_diacs.json';
+  // Comprehensive additional data files
+  static const String _classOfDeviceFileName = 'sig_class_of_device.json';
+  static const String _pcmFormatsFileName = 'sig_pcm_formats.json';
+  static const String _transportLayersFileName = 'sig_transport_layers.json';
+  static const String _protocolIdentifiersFileName =
+      'sig_protocol_identifiers.json';
+  static const String _unitsFileName = 'sig_units.json';
+  static const String _declarationsFileName = 'sig_declarations.json';
+  static const String _objectTypesFileName = 'sig_object_types.json';
+  static const String _browseGroupsFileName = 'sig_browse_groups.json';
+  static const String _serviceClassesFileName = 'sig_service_classes.json';
+  static const String _meshModelsFileName = 'sig_mesh_models.json';
+  static const String _meshProfileUuidsFileName = 'sig_mesh_profile_uuids.json';
 
   // In-memory databases
   final Map<String, String> _services = {};
   final Map<String, String> _characteristics = {};
   final Map<String, String> _descriptors = {};
   final Map<String, String> _companyIdentifiers = {};
+  // Additional enhanced databases
+  final Map<String, String> _memberUuids = {};
+  final Map<String, String> _appearanceValues = {};
+  final Map<String, String> _adTypes = {};
+  final Map<String, String> _codingFormats = {};
+  final Map<String, String> _meshBeacons = {};
+  final Map<String, String> _uriSchemes = {};
+  final Map<String, String> _diacs = {};
+  // Comprehensive additional databases
+  final Map<String, String> _classOfDevice = {};
+  final Map<String, String> _pcmFormats = {};
+  final Map<String, String> _transportLayers = {};
+  final Map<String, String> _protocolIdentifiers = {};
+  final Map<String, String> _units = {};
+  final Map<String, String> _declarations = {};
+  final Map<String, String> _objectTypes = {};
+  final Map<String, String> _browseGroups = {};
+  final Map<String, String> _serviceClasses = {};
+  final Map<String, String> _meshModels = {};
+  final Map<String, String> _meshProfileUuids = {};
 
   bool _isLoaded = false;
-  bool _isDownloading = false;
 
   // Stream controllers for real-time updates
   final StreamController<Map<String, String>> _servicesController =
       StreamController<Map<String, String>>.broadcast();
   final StreamController<Map<String, String>> _characteristicsController =
       StreamController<Map<String, String>>.broadcast();
+
+  // Download progress tracking (for compatibility with OUI service)
   final StreamController<double> _downloadProgressController =
       StreamController<double>.broadcast();
+  bool _isDownloading = false;
 
   // Getters
   Stream<Map<String, String>> get servicesStream => _servicesController.stream;
   Stream<Map<String, String>> get characteristicsStream =>
       _characteristicsController.stream;
-  Stream<double> get downloadProgressStream =>
-      _downloadProgressController.stream;
 
   bool get isLoaded => _isLoaded;
-  bool get isDownloading => _isDownloading;
   int get servicesCount => _services.length;
   int get characteristicsCount => _characteristics.length;
   int get descriptorsCount => _descriptors.length;
   int get companyIdentifiersCount => _companyIdentifiers.length;
+  int get memberUuidsCount => _memberUuids.length;
+  int get appearanceValuesCount => _appearanceValues.length;
+  int get adTypesCount => _adTypes.length;
+  int get codingFormatsCount => _codingFormats.length;
+  int get meshBeaconsCount => _meshBeacons.length;
+  int get uriSchemesCount => _uriSchemes.length;
+  int get diacsCount => _diacs.length;
+  // Comprehensive additional getters
+  int get classOfDeviceCount => _classOfDevice.length;
+  int get pcmFormatsCount => _pcmFormats.length;
+  int get transportLayersCount => _transportLayers.length;
+  int get protocolIdentifiersCount => _protocolIdentifiers.length;
+  int get unitsCount => _units.length;
+  int get declarationsCount => _declarations.length;
+  int get objectTypesCount => _objectTypes.length;
+  int get browseGroupsCount => _browseGroups.length;
+  int get serviceClassesCount => _serviceClasses.length;
+  int get meshModelsCount => _meshModels.length;
+  int get meshProfileUuidsCount => _meshProfileUuids.length;
+
+  // Download compatibility getters (for compatibility with OUI service)
+  bool get isDownloading => _isDownloading;
+  Stream<double> get downloadProgressStream =>
+      _downloadProgressController.stream;
 
   /// Initialize the service by loading cached data or using well-known values
   Future<void> initialize() async {
@@ -215,69 +268,30 @@ class SigService {
     }
   }
 
-  /// Download all SIG databases
-  Future<bool> downloadDatabase({bool forceUpdate = false}) async {
-    if (_isDownloading) return false;
-
-    if (!forceUpdate) {
-      final shouldSkip = await _shouldSkipUpdate();
-      if (shouldSkip) return true;
-    }
-
-    _isDownloading = true;
-    _downloadProgressController.add(0.0);
-
+  /// Manually refresh databases from disk (call this after adding new files)
+  Future<bool> refreshDatabases() async {
     try {
-      const totalDatabases = 4;
-      var completedDatabases = 0;
-
       // Clear existing data
       _services.clear();
       _characteristics.clear();
       _descriptors.clear();
       _companyIdentifiers.clear();
 
-      // Start with well-known values as fallback
-      _services.addAll(_wellKnownServices);
-      _characteristics.addAll(_wellKnownCharacteristics);
+      // Load from disk
+      await _loadFromDisk();
 
-      // Try downloading from remote sources (this may fail due to authentication/format issues)
-      await _downloadAndParseYaml(
-          _servicesUrl, _servicesFileName, _services, 'services');
-      completedDatabases++;
-      _downloadProgressController
-          .add(completedDatabases / totalDatabases * 0.8);
-
-      await _downloadAndParseYaml(_characteristicsUrl, _characteristicsFileName,
-          _characteristics, 'characteristics');
-      completedDatabases++;
-      _downloadProgressController
-          .add(completedDatabases / totalDatabases * 0.8);
-
-      await _downloadAndParseYaml(
-          _descriptorsUrl, _descriptorsFileName, _descriptors, 'descriptors');
-      completedDatabases++;
-      _downloadProgressController
-          .add(completedDatabases / totalDatabases * 0.8);
-
-      await _downloadAndParseYaml(
-          _companyIdentifiersUrl,
-          _companyIdentifiersFileName,
-          _companyIdentifiers,
-          'company_identifiers');
-      completedDatabases++;
-      _downloadProgressController
-          .add(completedDatabases / totalDatabases * 0.8);
-
-      // Save all databases to disk
-      await _saveToDisk();
+      // If no data loaded, use well-known values as fallback
+      if (_services.isEmpty && _characteristics.isEmpty) {
+        _services.addAll(_wellKnownServices);
+        _characteristics.addAll(_wellKnownCharacteristics);
+        debugPrint('No extended databases found, using well-known UUIDs');
+      }
 
       _isLoaded = true;
       _servicesController.add(_services);
       _characteristicsController.add(_characteristics);
 
-      _downloadProgressController.add(1.0);
-      debugPrint('SIG databases download completed');
+      debugPrint('Refreshed SIG databases');
       debugPrint(
           'Services: ${_services.length}, Characteristics: ${_characteristics.length}');
       debugPrint(
@@ -285,116 +299,55 @@ class SigService {
 
       return true;
     } catch (e) {
-      debugPrint('Error downloading SIG databases: $e');
-      // Ensure we have at least the well-known values
-      if (_services.isEmpty) _services.addAll(_wellKnownServices);
-      if (_characteristics.isEmpty) {
-        _characteristics.addAll(_wellKnownCharacteristics);
-      }
+      debugPrint('Error refreshing SIG databases: $e');
+      return false;
+    }
+  }
+
+  /// Download databases (compatibility method - SIG service loads from bundled assets)
+  Future<bool> downloadDatabase({bool forceUpdate = false}) async {
+    if (_isDownloading) return false;
+
+    _isDownloading = true;
+    _downloadProgressController.add(0.0);
+
+    try {
+      // Simulate download progress for compatibility
+      await Future.delayed(const Duration(milliseconds: 100));
+      _downloadProgressController.add(0.3);
+
+      // Refresh databases from bundled assets
+      await Future.delayed(const Duration(milliseconds: 100));
+      _downloadProgressController.add(0.7);
+
+      final success = await refreshDatabases();
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      _downloadProgressController.add(1.0);
+
+      return success;
+    } catch (e) {
+      debugPrint('Error in downloadDatabase: $e');
       return false;
     } finally {
       _isDownloading = false;
     }
   }
 
-  /// Download and parse a single YAML file
-  Future<void> _downloadAndParseYaml(String url, String fileName,
-      Map<String, String> database, String type) async {
-    try {
-      debugPrint('Attempting to download $type from $url...');
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode != 200) {
-        debugPrint('Failed to download $type: HTTP ${response.statusCode}');
-        return;
-      }
-
-      await _parseYamlData(response.body, database, type);
-      debugPrint('Successfully parsed ${database.length} $type entries');
-    } catch (e) {
-      debugPrint('Error downloading $type: $e');
-      // Continue with other downloads even if one fails
-    }
-  }
-
-  /// Parse YAML data into the database map
-  Future<void> _parseYamlData(
-      String yamlData, Map<String, String> database, String type) async {
-    try {
-      final yamlDoc = loadYaml(yamlData);
-
-      if (yamlDoc is! Map) {
-        debugPrint('Invalid YAML structure for $type');
-        return;
-      }
-
-      // Different YAML structures may exist, try common patterns
-      if (yamlDoc.containsKey('uuids')) {
-        final uuids = yamlDoc['uuids'];
-        if (uuids is List) {
-          for (final item in uuids) {
-            if (item is Map &&
-                item.containsKey('uuid') &&
-                item.containsKey('name')) {
-              final uuid = _normalizeUuid(item['uuid']?.toString() ?? '');
-              final name = item['name']?.toString() ?? '';
-              if (uuid.isNotEmpty && name.isNotEmpty) {
-                database[uuid] = name;
-              }
-            }
-          }
-        }
-      } else if (yamlDoc.containsKey('services') ||
-          yamlDoc.containsKey('characteristics')) {
-        // Handle other possible structures
-        final key =
-            yamlDoc.containsKey('services') ? 'services' : 'characteristics';
-        final items = yamlDoc[key];
-        if (items is Map) {
-          items.forEach((k, v) {
-            final uuid = _normalizeUuid(k.toString());
-            final name = v.toString();
-            if (uuid.isNotEmpty && name.isNotEmpty) {
-              database[uuid] = name;
-            }
-          });
-        }
-      }
-
-      debugPrint('Parsed ${database.length} entries from $type YAML');
-    } catch (e) {
-      debugPrint('Error parsing YAML for $type: $e');
-    }
-  }
-
-  /// Check if we should skip the update
-  Future<bool> _shouldSkipUpdate() async {
-    try {
-      final file =
-          File('${(await _getDataDirectory()).path}/$_servicesFileName');
-      if (!await file.exists()) return false;
-
-      final lastModified = await file.lastModified();
-      final daysSinceUpdate = DateTime.now().difference(lastModified).inDays;
-
-      if (daysSinceUpdate < 30) {
-        debugPrint(
-            'SIG databases are recent ($daysSinceUpdate days old), skipping download');
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      debugPrint('Error checking update time: $e');
-      return false;
-    }
-  }
-
-  /// Load databases from disk
+  /// Load databases from disk or bundled assets
   Future<void> _loadFromDisk() async {
     try {
+      // First try to load from bundled assets
+      final success = await _loadFromAssets();
+      if (success) {
+        debugPrint('Loaded SIG databases from bundled assets');
+        return;
+      }
+
+      // Fallback to loading from local storage
       final dataDir = await _getDataDirectory();
 
+      // Load core databases
       await _loadDatabaseFromFile(
           File('${dataDir.path}/$_servicesFileName'), _services);
       await _loadDatabaseFromFile(
@@ -405,34 +358,197 @@ class SigService {
           File('${dataDir.path}/$_companyIdentifiersFileName'),
           _companyIdentifiers);
 
+      // Load enhanced databases (optional)
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_memberUuidsFileName'), _memberUuids);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_appearanceValuesFileName'),
+          _appearanceValues);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_adTypesFileName'), _adTypes);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_codingFormatsFileName'), _codingFormats);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_meshBeaconsFileName'), _meshBeacons);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_uriSchemesFileName'), _uriSchemes);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_diacsFileName'), _diacs);
+
+      // Load comprehensive additional databases (optional)
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_classOfDeviceFileName'), _classOfDevice);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_pcmFormatsFileName'), _pcmFormats);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_transportLayersFileName'), _transportLayers);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_protocolIdentifiersFileName'),
+          _protocolIdentifiers);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_unitsFileName'), _units);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_declarationsFileName'), _declarations);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_objectTypesFileName'), _objectTypes);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_browseGroupsFileName'), _browseGroups);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_serviceClassesFileName'), _serviceClasses);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_meshModelsFileName'), _meshModels);
+      await _loadDatabaseFromFile(
+          File('${dataDir.path}/$_meshProfileUuidsFileName'),
+          _meshProfileUuids);
+
       if (_services.isNotEmpty || _characteristics.isNotEmpty) {
         debugPrint('Loaded SIG databases from disk');
         debugPrint(
             'Services: ${_services.length}, Characteristics: ${_characteristics.length}');
+        debugPrint(
+            'Enhanced data - Member UUIDs: ${_memberUuids.length}, Appearances: ${_appearanceValues.length}, AD Types: ${_adTypes.length}');
+        final totalCount = _services.length +
+            _characteristics.length +
+            _descriptors.length +
+            _companyIdentifiers.length +
+            _memberUuids.length +
+            _appearanceValues.length +
+            _adTypes.length +
+            _codingFormats.length +
+            _meshBeacons.length +
+            _uriSchemes.length +
+            _diacs.length +
+            _classOfDevice.length +
+            _pcmFormats.length +
+            _transportLayers.length +
+            _protocolIdentifiers.length +
+            _units.length +
+            _declarations.length +
+            _objectTypes.length +
+            _browseGroups.length +
+            _serviceClasses.length +
+            _meshModels.length +
+            _meshProfileUuids.length;
+        debugPrint('Total comprehensive database entries: $totalCount');
       }
     } catch (e) {
       debugPrint('Error loading SIG databases from disk: $e');
     }
   }
 
-  /// Save databases to disk
-  Future<void> _saveToDisk() async {
+  /// Load databases from bundled assets
+  Future<bool> _loadFromAssets() async {
     try {
-      final dataDir = await _getDataDirectory();
-
-      await _saveDatabaseToFile(
-          File('${dataDir.path}/$_servicesFileName'), _services);
-      await _saveDatabaseToFile(
-          File('${dataDir.path}/$_characteristicsFileName'), _characteristics);
-      await _saveDatabaseToFile(
-          File('${dataDir.path}/$_descriptorsFileName'), _descriptors);
-      await _saveDatabaseToFile(
-          File('${dataDir.path}/$_companyIdentifiersFileName'),
+      // Load core databases from assets
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_servicesFileName', _services);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_characteristicsFileName', _characteristics);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_descriptorsFileName', _descriptors);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_companyIdentifiersFileName',
           _companyIdentifiers);
 
-      debugPrint('Saved SIG databases to disk');
+      // Load enhanced databases from assets
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_memberUuidsFileName', _memberUuids);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_appearanceValuesFileName', _appearanceValues);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_adTypesFileName', _adTypes);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_codingFormatsFileName', _codingFormats);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_meshBeaconsFileName', _meshBeacons);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_uriSchemesFileName', _uriSchemes);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_diacsFileName', _diacs);
+
+      // Load comprehensive additional databases from assets
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_classOfDeviceFileName', _classOfDevice);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_pcmFormatsFileName', _pcmFormats);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_transportLayersFileName', _transportLayers);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_protocolIdentifiersFileName',
+          _protocolIdentifiers);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_unitsFileName', _units);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_declarationsFileName', _declarations);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_objectTypesFileName', _objectTypes);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_browseGroupsFileName', _browseGroups);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_serviceClassesFileName', _serviceClasses);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_meshModelsFileName', _meshModels);
+      await _loadDatabaseFromAsset(
+          'converted_sig_data/$_meshProfileUuidsFileName', _meshProfileUuids);
+
+      // Check if we successfully loaded data
+      final hasData = _services.isNotEmpty ||
+          _characteristics.isNotEmpty ||
+          _descriptors.isNotEmpty ||
+          _companyIdentifiers.isNotEmpty;
+
+      if (hasData) {
+        debugPrint('Successfully loaded SIG databases from bundled assets');
+        debugPrint(
+            'Services: ${_services.length}, Characteristics: ${_characteristics.length}');
+        debugPrint(
+            'Descriptors: ${_descriptors.length}, Company IDs: ${_companyIdentifiers.length}');
+        debugPrint(
+            'Enhanced data - Member UUIDs: ${_memberUuids.length}, Appearances: ${_appearanceValues.length}, AD Types: ${_adTypes.length}');
+
+        final totalCount = _services.length +
+            _characteristics.length +
+            _descriptors.length +
+            _companyIdentifiers.length +
+            _memberUuids.length +
+            _appearanceValues.length +
+            _adTypes.length +
+            _codingFormats.length +
+            _meshBeacons.length +
+            _uriSchemes.length +
+            _diacs.length +
+            _classOfDevice.length +
+            _pcmFormats.length +
+            _transportLayers.length +
+            _protocolIdentifiers.length +
+            _units.length +
+            _declarations.length +
+            _objectTypes.length +
+            _browseGroups.length +
+            _serviceClasses.length +
+            _meshModels.length +
+            _meshProfileUuids.length;
+        debugPrint('Total comprehensive database entries: $totalCount');
+      }
+
+      return hasData;
     } catch (e) {
-      debugPrint('Error saving SIG databases to disk: $e');
+      debugPrint('Error loading SIG databases from assets: $e');
+      return false;
+    }
+  }
+
+  /// Load a single database from Flutter asset
+  Future<void> _loadDatabaseFromAsset(
+      String assetPath, Map<String, String> database) async {
+    try {
+      final content = await rootBundle.loadString(assetPath);
+      final Map<String, dynamic> data = jsonDecode(content);
+      data.forEach((key, value) {
+        database[key] = value.toString();
+      });
+    } catch (e) {
+      debugPrint('Error loading database from asset $assetPath: $e');
     }
   }
 
@@ -450,17 +566,6 @@ class SigService {
       });
     } catch (e) {
       debugPrint('Error loading database from ${file.path}: $e');
-    }
-  }
-
-  /// Save a single database to file
-  Future<void> _saveDatabaseToFile(
-      File file, Map<String, String> database) async {
-    try {
-      await file.parent.create(recursive: true);
-      await file.writeAsString(jsonEncode(database));
-    } catch (e) {
-      debugPrint('Error saving database to ${file.path}: $e');
     }
   }
 
@@ -482,6 +587,25 @@ class SigService {
       _characteristics.clear();
       _descriptors.clear();
       _companyIdentifiers.clear();
+      _memberUuids.clear();
+      _appearanceValues.clear();
+      _adTypes.clear();
+      _codingFormats.clear();
+      _meshBeacons.clear();
+      _uriSchemes.clear();
+      _diacs.clear();
+      // Clear comprehensive additional databases
+      _classOfDevice.clear();
+      _pcmFormats.clear();
+      _transportLayers.clear();
+      _protocolIdentifiers.clear();
+      _units.clear();
+      _declarations.clear();
+      _objectTypes.clear();
+      _browseGroups.clear();
+      _serviceClasses.clear();
+      _meshModels.clear();
+      _meshProfileUuids.clear();
 
       // Restore well-known values
       _services.addAll(_wellKnownServices);
@@ -499,6 +623,12 @@ class SigService {
     }
   }
 
+  /// Get the path where SIG database files should be placed
+  Future<String> getDatabasePath() async {
+    final dataDir = await _getDataDirectory();
+    return dataDir.path;
+  }
+
   /// Get the last update time
   Future<DateTime?> getLastUpdateTime() async {
     try {
@@ -513,18 +643,62 @@ class SigService {
     return null;
   }
 
+  /// Development helper: Check if extended databases are available
+  Future<Map<String, bool>> checkDatabaseFiles() async {
+    final result = <String, bool>{};
+    try {
+      final dataDir = await _getDataDirectory();
+
+      final filesToCheck = {
+        'services': _servicesFileName,
+        'characteristics': _characteristicsFileName,
+        'descriptors': _descriptorsFileName,
+        'company_identifiers': _companyIdentifiersFileName,
+        'member_uuids': _memberUuidsFileName,
+        'appearance_values': _appearanceValuesFileName,
+        'ad_types': _adTypesFileName,
+        'coding_formats': _codingFormatsFileName,
+        'mesh_beacons': _meshBeaconsFileName,
+        'uri_schemes': _uriSchemesFileName,
+        'diacs': _diacsFileName,
+      };
+
+      for (final entry in filesToCheck.entries) {
+        final file = File('${dataDir.path}/${entry.value}');
+        result[entry.key] = await file.exists();
+      }
+    } catch (e) {
+      debugPrint('Error checking database files: $e');
+    }
+    return result;
+  }
+
   /// Get service name from UUID
   String? getServiceName(String uuid) {
-    if (!_isLoaded) return null;
     final normalizedUuid = _normalizeUuid(uuid);
-    return _services[normalizedUuid];
+
+    // First try the loaded database if available
+    if (_isLoaded) {
+      final serviceName = _services[normalizedUuid];
+      if (serviceName != null) return serviceName;
+    }
+
+    // Fall back to well-known services
+    return _wellKnownServices[normalizedUuid];
   }
 
   /// Get characteristic name from UUID
   String? getCharacteristicName(String uuid) {
-    if (!_isLoaded) return null;
     final normalizedUuid = _normalizeUuid(uuid);
-    return _characteristics[normalizedUuid];
+
+    // First try the loaded database if available
+    if (_isLoaded) {
+      final characteristicName = _characteristics[normalizedUuid];
+      if (characteristicName != null) return characteristicName;
+    }
+
+    // Fall back to well-known characteristics
+    return _wellKnownCharacteristics[normalizedUuid];
   }
 
   /// Get descriptor name from UUID
@@ -538,6 +712,131 @@ class SigService {
   String? getCompanyName(String identifier) {
     if (!_isLoaded) return null;
     return _companyIdentifiers[identifier.toLowerCase()];
+  }
+
+  /// Get appearance name from UUID
+  String? getAppearanceName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _appearanceValues[normalizedUuid];
+  }
+
+  /// Get advertisement data type name from UUID
+  String? getAdTypeName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _adTypes[normalizedUuid];
+  }
+
+  /// Get member UUID name
+  String? getMemberUuidName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _memberUuids[normalizedUuid];
+  }
+
+  /// Get coding format name from identifier
+  String? getCodingFormatName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _codingFormats[normalizedId];
+  }
+
+  /// Get mesh beacon type name from identifier
+  String? getMeshBeaconTypeName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _meshBeacons[normalizedId];
+  }
+
+  /// Get URI scheme name from identifier
+  String? getUriSchemeName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _uriSchemes[normalizedId];
+  }
+
+  /// Get DIAC (Device Identification and Configuration) name from identifier
+  String? getDiacName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _diacs[normalizedId];
+  }
+
+  /// Get class of device service name from bit number
+  String? getClassOfDeviceName(String bitNumber) {
+    if (!_isLoaded) return null;
+    return _classOfDevice[bitNumber];
+  }
+
+  /// Get PCM data format name from identifier
+  String? getPcmFormatName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _pcmFormats[normalizedId];
+  }
+
+  /// Get transport layer name from identifier
+  String? getTransportLayerName(String identifier) {
+    if (!_isLoaded) return null;
+    final normalizedId = _normalizeUuid(identifier);
+    return _transportLayers[normalizedId];
+  }
+
+  /// Get protocol identifier name from UUID
+  String? getProtocolIdentifierName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _protocolIdentifiers[normalizedUuid];
+  }
+
+  /// Get unit name from UUID
+  String? getUnitName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _units[normalizedUuid];
+  }
+
+  /// Get declaration name from UUID
+  String? getDeclarationName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _declarations[normalizedUuid];
+  }
+
+  /// Get object type name from UUID
+  String? getObjectTypeName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _objectTypes[normalizedUuid];
+  }
+
+  /// Get browse group name from UUID
+  String? getBrowseGroupName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _browseGroups[normalizedUuid];
+  }
+
+  /// Get service class name from UUID
+  String? getServiceClassName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _serviceClasses[normalizedUuid];
+  }
+
+  /// Get mesh model name from UUID
+  String? getMeshModelName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _meshModels[normalizedUuid];
+  }
+
+  /// Get mesh profile UUID name
+  String? getMeshProfileUuidName(String uuid) {
+    if (!_isLoaded) return null;
+    final normalizedUuid = _normalizeUuid(uuid);
+    return _meshProfileUuids[normalizedUuid];
   }
 
   /// Normalize UUID to lowercase, remove hyphens and 0x prefix
@@ -560,6 +859,54 @@ class SigService {
     }
 
     return normalized;
+  }
+
+  /// Get information about the current database state and any issues
+  String getDatabaseStatus() {
+    final buffer = StringBuffer();
+    buffer.writeln('SIG Database Status:');
+    buffer.writeln('  Services: ${_services.length}');
+    buffer.writeln('  Characteristics: ${_characteristics.length}');
+    buffer.writeln('  Descriptors: ${_descriptors.length}');
+    buffer.writeln('  Company IDs: ${_companyIdentifiers.length}');
+    buffer.writeln('  Member UUIDs: ${_memberUuids.length}');
+    buffer.writeln('  Appearance Values: ${_appearanceValues.length}');
+    buffer.writeln('  AD Types: ${_adTypes.length}');
+    buffer.writeln('  Coding Formats: ${_codingFormats.length}');
+    buffer.writeln('  Mesh Beacons: ${_meshBeacons.length}');
+    buffer.writeln('  URI Schemes: ${_uriSchemes.length}');
+    buffer.writeln('  DIACs: ${_diacs.length}');
+    buffer.writeln('  Class of Device: ${_classOfDevice.length}');
+    buffer.writeln('  PCM Formats: ${_pcmFormats.length}');
+    buffer.writeln('  Transport Layers: ${_transportLayers.length}');
+    buffer.writeln('  Protocol Identifiers: ${_protocolIdentifiers.length}');
+    buffer.writeln('  Units: ${_units.length}');
+    buffer.writeln('  Declarations: ${_declarations.length}');
+    buffer.writeln('  Object Types: ${_objectTypes.length}');
+    buffer.writeln('  Browse Groups: ${_browseGroups.length}');
+    buffer.writeln('  Service Classes: ${_serviceClasses.length}');
+    buffer.writeln('  Mesh Models: ${_meshModels.length}');
+    buffer.writeln('  Mesh Profile UUIDs: ${_meshProfileUuids.length}');
+    buffer.writeln('  Loaded: $_isLoaded');
+
+    if (_services.length == _wellKnownServices.length &&
+        _characteristics.length == _wellKnownCharacteristics.length) {
+      buffer.writeln();
+      buffer.writeln('INFO: Using well-known UUIDs only.');
+      buffer.writeln('Extended database files not found in local storage.');
+      buffer.writeln();
+      buffer.writeln('To add more UUIDs:');
+      buffer.writeln(
+          '  1. Manually download Bluetooth SIG assigned numbers files');
+      buffer.writeln('  2. Place YAML/JSON files in the app data directory');
+      buffer.writeln(
+          '  3. For now, the app will use ${_wellKnownServices.length} built-in services');
+    } else {
+      buffer.writeln();
+      buffer.writeln('SUCCESS: Extended database loaded from local files.');
+    }
+
+    return buffer.toString();
   }
 
   /// Dispose of resources

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
@@ -604,6 +605,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+        if (kDebugMode || !_ouiService.isLoaded) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isDownloadingOui ? null : _testNetworkConnectivity,
+            icon: const Icon(Icons.network_check),
+            label: const Text('Test Network'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.blue,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -659,6 +671,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const SnackBar(
         content: Text('Failed to download OUI database'),
         backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _testNetworkConnectivity() async {
+    final success = await _ouiService.testNetworkConnectivity();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Network connectivity test successful'
+            : 'Network connectivity test failed - check internet connection'),
+        backgroundColor: success ? Colors.green : Colors.orange,
+        duration: const Duration(seconds: 3),
       ),
     );
   }

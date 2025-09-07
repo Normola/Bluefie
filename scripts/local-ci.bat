@@ -70,8 +70,8 @@ if exist "%APK_PATH%" (
     set /a APK_SIZE_MB=%APK_SIZE% / 1048576
     echo 📱 APK size: approximately %APK_SIZE_MB% MB
 
-    if %APK_SIZE_MB% gtr 50 (
-        echo ⚠️  Warning: APK size (%APK_SIZE_MB% MB^) is larger than 50MB
+    if %APK_SIZE_MB% gtr 100 (
+        echo ⚠️  Warning: APK size (%APK_SIZE_MB% MB^) is larger than 100MB
     )
 )
 

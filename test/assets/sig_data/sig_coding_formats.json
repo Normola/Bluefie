@@ -1,0 +1,11 @@
+{
+  "0000": "µ-law log",
+  "0001": "A-law log",
+  "0002": "CVSD",
+  "0003": "Transparent",
+  "0004": "Linear PCM",
+  "0005": "mSBC",
+  "0006": "LC3",
+  "0007": "G.729A",
+  "00ff": "Vendor Specific"
+}

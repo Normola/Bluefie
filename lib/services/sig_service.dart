@@ -288,8 +288,9 @@ class SigService {
       debugPrint('Error downloading SIG databases: $e');
       // Ensure we have at least the well-known values
       if (_services.isEmpty) _services.addAll(_wellKnownServices);
-      if (_characteristics.isEmpty)
+      if (_characteristics.isEmpty) {
         _characteristics.addAll(_wellKnownCharacteristics);
+      }
       return false;
     } finally {
       _isDownloading = false;

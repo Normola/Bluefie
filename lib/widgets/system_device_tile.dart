@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import '../services/oui_service.dart';
+import '../services/settings_service.dart';
+
 class SystemDeviceTile extends StatefulWidget {
   final BluetoothDevice device;
   final VoidCallback onOpen;
@@ -25,6 +28,10 @@ class _SystemDeviceTileState extends State<SystemDeviceTile> {
 
   late StreamSubscription<BluetoothConnectionState>
       _connectionStateSubscription;
+
+  // Service instances - using singleton pattern
+  final SettingsService _settingsService = SettingsService();
+  final OuiService _ouiService = OuiService();
 
   @override
   void initState() {
@@ -51,13 +58,38 @@ class _SystemDeviceTileState extends State<SystemDeviceTile> {
 
   @override
   Widget build(BuildContext context) {
+    final manufacturer = _getManufacturerInfo();
+
     return ListTile(
       title: Text(widget.device.platformName),
-      subtitle: Text(widget.device.remoteId.str),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.device.remoteId.str),
+          if (manufacturer != null)
+            Text(
+              manufacturer,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.blue,
+                    fontStyle: FontStyle.italic,
+                  ),
+            ),
+        ],
+      ),
       trailing: ElevatedButton(
         onPressed: isConnected ? widget.onOpen : widget.onConnect,
         child: isConnected ? const Text('OPEN') : const Text('CONNECT'),
       ),
     );
+  }
+
+  String? _getManufacturerInfo() {
+    if (!_settingsService.currentSettings.ouiDatabaseEnabled ||
+        !_ouiService.isLoaded) {
+      return null;
+    }
+
+    final macAddress = widget.device.remoteId.str;
+    return _ouiService.getManufacturer(macAddress);
   }
 }

@@ -8,6 +8,8 @@ class AppSettings {
   final bool verboseLoggingEnabled;
   final bool showNotifications;
   final bool autoScanWhenPluggedIn;
+  final bool ouiDatabaseEnabled;
+  final DateTime? ouiDatabaseLastUpdated;
 
   const AppSettings({
     this.autoScanningEnabled = false,
@@ -19,6 +21,8 @@ class AppSettings {
     this.verboseLoggingEnabled = false,
     this.showNotifications = true,
     this.autoScanWhenPluggedIn = false,
+    this.ouiDatabaseEnabled = false,
+    this.ouiDatabaseLastUpdated,
   });
 
   AppSettings copyWith({
@@ -31,6 +35,8 @@ class AppSettings {
     bool? verboseLoggingEnabled,
     bool? showNotifications,
     bool? autoScanWhenPluggedIn,
+    bool? ouiDatabaseEnabled,
+    DateTime? ouiDatabaseLastUpdated,
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
@@ -47,6 +53,9 @@ class AppSettings {
       showNotifications: showNotifications ?? this.showNotifications,
       autoScanWhenPluggedIn:
           autoScanWhenPluggedIn ?? this.autoScanWhenPluggedIn,
+      ouiDatabaseEnabled: ouiDatabaseEnabled ?? this.ouiDatabaseEnabled,
+      ouiDatabaseLastUpdated:
+          ouiDatabaseLastUpdated ?? this.ouiDatabaseLastUpdated,
     );
   }
 
@@ -61,6 +70,8 @@ class AppSettings {
       'verboseLoggingEnabled': verboseLoggingEnabled,
       'showNotifications': showNotifications,
       'autoScanWhenPluggedIn': autoScanWhenPluggedIn,
+      'ouiDatabaseEnabled': ouiDatabaseEnabled,
+      'ouiDatabaseLastUpdated': ouiDatabaseLastUpdated?.millisecondsSinceEpoch,
     };
   }
 
@@ -75,6 +86,10 @@ class AppSettings {
       verboseLoggingEnabled: json['verboseLoggingEnabled'] ?? false,
       showNotifications: json['showNotifications'] ?? true,
       autoScanWhenPluggedIn: json['autoScanWhenPluggedIn'] ?? false,
+      ouiDatabaseEnabled: json['ouiDatabaseEnabled'] ?? false,
+      ouiDatabaseLastUpdated: json['ouiDatabaseLastUpdated'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['ouiDatabaseLastUpdated'])
+          : null,
     );
   }
 

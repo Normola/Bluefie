@@ -6,6 +6,7 @@ import 'bluetooth_adapter_service.dart';
 import 'bluetooth_scanning_service.dart';
 import 'logging_service.dart';
 import 'navigation_observer_service.dart';
+import 'oui_service.dart';
 import 'settings_service.dart';
 
 /// Interface for app initialization and configuration
@@ -33,6 +34,7 @@ class AppConfiguration implements AppConfigurationInterface {
     await SettingsService().initialize();
     await BatteryService().initialize();
     await BluetoothScanningService().initialize();
+    await OuiService().initialize();
 
     // Initialize app lifecycle monitoring
     AppLifecycleService().initialize();

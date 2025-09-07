@@ -11,6 +11,11 @@ on:
         required: false
         default: '3.22.0,3.24.3,stable'
 
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   JAVA_VERSION: '17'
 

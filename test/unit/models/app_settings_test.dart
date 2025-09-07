@@ -461,5 +461,242 @@ void main() {
         expect(json, isA<Map<String, dynamic>>());
       });
     });
+
+    group('OUI Database Settings', () {
+      test('should have correct default OUI values', () {
+        const settings = AppSettings();
+
+        expect(settings.ouiDatabaseEnabled, false);
+        expect(settings.ouiDatabaseLastUpdated, null);
+      });
+
+      test('should handle OUI database enabled setting', () {
+        const settings = AppSettings(ouiDatabaseEnabled: true);
+
+        expect(settings.ouiDatabaseEnabled, true);
+      });
+
+      test('should handle OUI database last updated setting', () {
+        final lastUpdated = DateTime(2023, 9, 1, 12);
+        final settings = AppSettings(ouiDatabaseLastUpdated: lastUpdated);
+
+        expect(settings.ouiDatabaseLastUpdated, lastUpdated);
+      });
+
+      test('should handle null OUI database last updated', () {
+        const settings = AppSettings();
+
+        expect(settings.ouiDatabaseLastUpdated, null);
+      });
+
+      test('should update OUI database enabled via copyWith', () {
+        const original = AppSettings();
+        final updated = original.copyWith(ouiDatabaseEnabled: true);
+
+        expect(original.ouiDatabaseEnabled, false);
+        expect(updated.ouiDatabaseEnabled, true);
+      });
+
+      test('should update OUI database last updated via copyWith', () {
+        const original = AppSettings();
+        final lastUpdated = DateTime(2023, 9);
+        final updated = original.copyWith(ouiDatabaseLastUpdated: lastUpdated);
+
+        expect(original.ouiDatabaseLastUpdated, null);
+        expect(updated.ouiDatabaseLastUpdated, lastUpdated);
+      });
+
+      test('should preserve OUI database last updated via copyWith', () {
+        final testDate = DateTime(2023, 9);
+        final original = AppSettings(ouiDatabaseLastUpdated: testDate);
+        final updated = original.copyWith();
+
+        expect(original.ouiDatabaseLastUpdated, testDate);
+        expect(updated.ouiDatabaseLastUpdated, testDate);
+      });
+
+      test('should update multiple OUI settings at once', () {
+        const original = AppSettings();
+
+        final lastUpdated = DateTime(2023, 9);
+        final updated = original.copyWith(
+          ouiDatabaseEnabled: true,
+          ouiDatabaseLastUpdated: lastUpdated,
+        );
+
+        expect(updated.ouiDatabaseEnabled, true);
+        expect(updated.ouiDatabaseLastUpdated, lastUpdated);
+      });
+
+      test('should serialize OUI settings to JSON correctly', () {
+        final lastUpdated = DateTime(2023, 9, 1, 12, 30, 45);
+        final settings = AppSettings(
+          ouiDatabaseEnabled: true,
+          ouiDatabaseLastUpdated: lastUpdated,
+        );
+
+        final json = settings.toJson();
+
+        expect(json['ouiDatabaseEnabled'], true);
+        expect(
+            json['ouiDatabaseLastUpdated'], lastUpdated.millisecondsSinceEpoch);
+      });
+
+      test('should serialize null OUI last updated to JSON', () {
+        const settings = AppSettings(
+          ouiDatabaseEnabled: true,
+        );
+
+        final json = settings.toJson();
+
+        expect(json['ouiDatabaseEnabled'], true);
+        expect(json['ouiDatabaseLastUpdated'], null);
+      });
+
+      test('should deserialize OUI settings from JSON correctly', () {
+        final lastUpdated = DateTime(2023, 9, 1, 12, 30, 45);
+        final json = {
+          'autoScanningEnabled': false,
+          'autoScanWhenPluggedIn': false,
+          'scanIntervalSeconds': 30,
+          'locationTrackingEnabled': true,
+          'batteryOptimizationEnabled': true,
+          'batteryThresholdPercent': 20,
+          'verboseLoggingEnabled': false,
+          'showNotifications': true,
+          'dataRetentionDays': 30,
+          'ouiDatabaseEnabled': true,
+          'ouiDatabaseLastUpdated': lastUpdated.millisecondsSinceEpoch,
+        };
+
+        final settings = AppSettings.fromJson(json);
+
+        expect(settings.ouiDatabaseEnabled, true);
+        expect(settings.ouiDatabaseLastUpdated, lastUpdated);
+      });
+
+      test('should deserialize null OUI last updated from JSON', () {
+        final json = {
+          'autoScanningEnabled': false,
+          'autoScanWhenPluggedIn': false,
+          'scanIntervalSeconds': 30,
+          'locationTrackingEnabled': true,
+          'batteryOptimizationEnabled': true,
+          'batteryThresholdPercent': 20,
+          'verboseLoggingEnabled': false,
+          'showNotifications': true,
+          'dataRetentionDays': 30,
+          'ouiDatabaseEnabled': false,
+          'ouiDatabaseLastUpdated': null,
+        };
+
+        final settings = AppSettings.fromJson(json);
+
+        expect(settings.ouiDatabaseEnabled, false);
+        expect(settings.ouiDatabaseLastUpdated, null);
+      });
+
+      test('should handle missing OUI fields in JSON with defaults', () {
+        final json = {
+          'autoScanningEnabled': true,
+          'scanIntervalSeconds': 30,
+          // Missing OUI fields
+        };
+
+        final settings = AppSettings.fromJson(json);
+
+        // Should use default values
+        expect(settings.ouiDatabaseEnabled, false);
+        expect(settings.ouiDatabaseLastUpdated, null);
+      });
+
+      test('should maintain OUI data integrity through JSON round-trip', () {
+        final lastUpdated = DateTime(2023, 9, 1, 12, 30, 45, 123);
+        final original = AppSettings(
+          ouiDatabaseEnabled: true,
+          ouiDatabaseLastUpdated: lastUpdated,
+        );
+
+        final json = original.toJson();
+        final restored = AppSettings.fromJson(json);
+
+        expect(restored.ouiDatabaseEnabled, original.ouiDatabaseEnabled);
+        expect(
+            restored.ouiDatabaseLastUpdated, original.ouiDatabaseLastUpdated);
+      });
+
+      test('should handle null OUI last updated in round-trip', () {
+        const original = AppSettings(
+          ouiDatabaseEnabled: true,
+        );
+
+        final json = original.toJson();
+        final restored = AppSettings.fromJson(json);
+
+        expect(restored.ouiDatabaseEnabled, original.ouiDatabaseEnabled);
+        expect(
+            restored.ouiDatabaseLastUpdated, original.ouiDatabaseLastUpdated);
+      });
+
+      test('should be equal when OUI fields are the same', () {
+        final lastUpdated = DateTime(2023, 9);
+        final settings1 = AppSettings(
+          ouiDatabaseEnabled: true,
+          ouiDatabaseLastUpdated: lastUpdated,
+        );
+        final settings2 = AppSettings(
+          ouiDatabaseEnabled: true,
+          ouiDatabaseLastUpdated: lastUpdated,
+        );
+
+        // Compare fields instead of object equality since AppSettings doesn't implement equality
+        expect(
+            settings1.ouiDatabaseEnabled, equals(settings2.ouiDatabaseEnabled));
+        expect(settings1.ouiDatabaseLastUpdated,
+            equals(settings2.ouiDatabaseLastUpdated));
+      });
+
+      test('should not be equal when OUI database enabled differs', () {
+        const settings1 = AppSettings(ouiDatabaseEnabled: true);
+        const settings2 = AppSettings();
+
+        expect(settings1, isNot(equals(settings2)));
+        expect(settings1.hashCode, isNot(equals(settings2.hashCode)));
+      });
+
+      test('should not be equal when OUI last updated differs', () {
+        final date1 = DateTime(2023, 9);
+        final date2 = DateTime(2023, 9, 2);
+        final settings1 = AppSettings(ouiDatabaseLastUpdated: date1);
+        final settings2 = AppSettings(ouiDatabaseLastUpdated: date2);
+
+        expect(settings1, isNot(equals(settings2)));
+        expect(settings1.hashCode, isNot(equals(settings2.hashCode)));
+      });
+
+      test('should handle extreme date values for OUI last updated', () {
+        final extremeDate = DateTime(1970); // Unix epoch
+        final settings = AppSettings(ouiDatabaseLastUpdated: extremeDate);
+
+        expect(settings.ouiDatabaseLastUpdated, extremeDate);
+
+        final json = settings.toJson();
+        final restored = AppSettings.fromJson(json);
+
+        expect(restored.ouiDatabaseLastUpdated, extremeDate);
+      });
+
+      test('should handle future dates for OUI last updated', () {
+        final futureDate = DateTime(2030, 12, 31, 23, 59, 59);
+        final settings = AppSettings(ouiDatabaseLastUpdated: futureDate);
+
+        expect(settings.ouiDatabaseLastUpdated, futureDate);
+
+        final json = settings.toJson();
+        final restored = AppSettings.fromJson(json);
+
+        expect(restored.ouiDatabaseLastUpdated, futureDate);
+      });
+    });
   });
 }

@@ -69,11 +69,17 @@ class OuiService {
       debugPrint('Downloading OUI database from IEEE...');
 
       final request = http.Request('GET', Uri.parse(_ouiUrl));
+
+      // Add user agent for better compatibility
+      request.headers['User-Agent'] = 'Blufie-Flutter-App/1.0';
+
       final response = await request.send();
+
+      debugPrint('OUI download response: ${response.statusCode}');
 
       if (response.statusCode != 200) {
         throw Exception(
-            'Failed to download OUI database: ${response.statusCode}');
+            'Failed to download OUI database: ${response.statusCode} ${response.reasonPhrase}');
       }
 
       final contentLength = response.contentLength ?? 0;
@@ -103,8 +109,23 @@ class OuiService {
       debugPrint(
           'OUI database downloaded and parsed successfully (${_ouiDatabase.length} entries)');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error downloading OUI database: $e');
+      if (kDebugMode) {
+        debugPrint('Stack trace: $stackTrace');
+      }
+
+      // Provide more specific error information
+      if (e is SocketException) {
+        debugPrint(
+            'Network connection error - check internet connectivity and firewall settings');
+      } else if (e is HandshakeException) {
+        debugPrint(
+            'SSL/TLS handshake error - check network security configuration');
+      } else if (e is HttpException) {
+        debugPrint('HTTP protocol error - server may be unavailable');
+      }
+
       return false;
     } finally {
       _isDownloading = false;
@@ -201,5 +222,32 @@ class OuiService {
   void dispose() {
     _databaseController.close();
     _downloadProgressController.close();
+  }
+
+  /// Test network connectivity to the OUI database URL
+  /// Useful for diagnosing network issues in release builds
+  Future<bool> testNetworkConnectivity() async {
+    try {
+      debugPrint('Testing network connectivity to IEEE OUI server...');
+
+      final request = http.Request('HEAD', Uri.parse(_ouiUrl));
+      request.headers['User-Agent'] = 'Blufie-Flutter-App/1.0';
+
+      final response = await request.send();
+
+      debugPrint('Network test response: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 405) {
+        // 405 Method Not Allowed is OK for HEAD request
+        debugPrint('Network connectivity test successful');
+        return true;
+      } else {
+        debugPrint('Network connectivity test failed: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Network connectivity test error: $e');
+      return false;
+    }
   }
 }

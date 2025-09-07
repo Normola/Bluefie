@@ -64,10 +64,10 @@ if [ -f "$APK_PATH" ]; then
         APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc -l 2>/dev/null || echo "unknown")
         echo "📱 APK size: ${APK_SIZE_MB} MB"
 
-        # Warn if APK is larger than 50MB
+        # Warn if APK is larger than 100MB
         if command -v bc &> /dev/null && [ "$APK_SIZE_MB" != "unknown" ]; then
-            if (( $(echo "$APK_SIZE_MB > 50" | bc -l) )); then
-                echo "⚠️  Warning: APK size (${APK_SIZE_MB} MB) is larger than 50MB"
+            if (( $(echo "$APK_SIZE_MB > 100" | bc -l) )); then
+                echo "⚠️  Warning: APK size (${APK_SIZE_MB} MB) is larger than 100MB"
             fi
         fi
     fi

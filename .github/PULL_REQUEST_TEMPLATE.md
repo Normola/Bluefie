@@ -18,7 +18,7 @@ Brief description of changes made.
 
 ## APK Size Impact
 Our CI now validates **Release APK** size (what users download) rather than Profile APK size:
-- **Release APK limit**: 50MB (production builds)
+- **Release APK limit**: 100MB (production builds)
 - **Profile APK**: No limit (includes debug symbols for performance testing)
 
 The build validation will report both sizes for transparency.

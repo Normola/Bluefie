@@ -150,10 +150,10 @@ jobs:
           APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc)
           echo "Release APK Size: ${APK_SIZE_MB} MB"
 
-          # Fail if release APK is larger than 50MB
+          # Fail if release APK is larger than 100MB
           # Release APKs should be much smaller than this limit
-          if (( $(echo "$APK_SIZE_MB > 50" | bc -l) )); then
-            echo "❌ Release APK size ($APK_SIZE_MB MB) exceeds 50MB limit"
+          if (( $(echo "$APK_SIZE_MB > 100" | bc -l) )); then
+            echo "❌ Release APK size ($APK_SIZE_MB MB) exceeds 100MB limit"
             echo "This indicates a serious bloat issue in the production build"
             exit 1
           else

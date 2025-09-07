@@ -7,6 +7,7 @@ import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
+import '../services/oui_service.dart';
 import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -22,15 +23,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final DataExportService _exportService = DataExportService();
   final AppLifecycleService _lifecycleService = AppLifecycleService();
+  final OuiService _ouiService = OuiService();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
   AppLifecycleState _currentLifecycleState = AppLifecycleState.resumed;
+  bool _isDownloadingOui = false;
+  double _ouiDownloadProgress = 0.0;
+  DateTime? _ouiLastUpdated;
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
+  StreamSubscription<double>? _ouiDownloadSubscription;
 
   @override
   void initState() {
@@ -44,6 +50,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _currentBatteryLevel = _batteryService.currentBatteryLevel;
     _batteryStatusText = _batteryService.getBatteryStatusText();
     _currentLifecycleState = _lifecycleService.currentState;
+    _initializeOuiService();
+  }
+
+  void _initializeOuiService() async {
+    await _ouiService.initialize();
+    final lastUpdated = await _ouiService.getLastUpdateTime();
+    if (mounted) {
+      setState(() {
+        _ouiLastUpdated = lastUpdated;
+      });
+    }
   }
 
   void _setupStreams() {
@@ -72,6 +89,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _currentLifecycleState = state;
       });
     });
+
+    _ouiDownloadSubscription =
+        _ouiService.downloadProgressStream.listen((progress) {
+      if (!mounted) return;
+
+      setState(() {
+        _ouiDownloadProgress = progress;
+        _isDownloadingOui = progress < 1.0 && progress > 0.0;
+      });
+    });
   }
 
   @override
@@ -79,6 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _settingsSubscription?.cancel();
     _batteryLevelSubscription?.cancel();
     _lifecycleSubscription?.cancel();
+    _ouiDownloadSubscription?.cancel();
     super.dispose();
   }
 
@@ -122,6 +150,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildBatteryOptimizationCard(),
           const SizedBox(height: 16),
           _buildAdvancedSettingsCard(),
+          const SizedBox(height: 16),
+          _buildOuiDatabaseCard(),
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
@@ -388,6 +418,209 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildOuiDatabaseCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Device Manufacturer Database',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Show Manufacturer Names'),
+              subtitle:
+                  const Text('Display device manufacturer from MAC address'),
+              value: _settings.ouiDatabaseEnabled,
+              onChanged: (value) {
+                _settingsService.updateOuiDatabaseEnabled(value);
+              },
+            ),
+            if (_settings.ouiDatabaseEnabled) ...[
+              const Divider(),
+              _buildOuiDatabaseStatus(),
+              const SizedBox(height: 12),
+              _buildOuiDatabaseActions(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOuiDatabaseStatus() {
+    if (_isDownloadingOui) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                  'Downloading database... ${(_ouiDownloadProgress * 100).toInt()}%'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: _ouiDownloadProgress),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              _ouiService.isLoaded ? Icons.check_circle : Icons.info,
+              color: _ouiService.isLoaded ? Colors.green : Colors.orange,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _ouiService.isLoaded
+                    ? 'Database loaded (${_ouiService.databaseSize} manufacturers)'
+                    : 'Database not downloaded',
+              ),
+            ),
+          ],
+        ),
+        if (_ouiLastUpdated != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 32, top: 4),
+            child: Row(
+              children: [
+                Text(
+                  'Last updated: ${_formatDate(_ouiLastUpdated!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildOuiDatabaseActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isDownloadingOui ? null : _downloadOuiDatabase,
+            icon: const Icon(Icons.download),
+            label: Text(
+                _ouiService.isLoaded ? 'Update Database' : 'Download Database'),
+          ),
+        ),
+        if (_ouiService.isLoaded) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isDownloadingOui ? null : _deleteOuiDatabase,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<void> _downloadOuiDatabase() async {
+    setState(() {
+      _isDownloadingOui = true;
+    });
+
+    final success = await _ouiService.downloadDatabase(forceUpdate: true);
+
+    if (mounted) {
+      setState(() {
+        _isDownloadingOui = false;
+      });
+
+      final lastUpdated = await _ouiService.getLastUpdateTime();
+      setState(() {
+        _ouiLastUpdated = lastUpdated;
+      });
+
+      if (success) {
+        await _settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OUI database downloaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to download OUI database'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteOuiDatabase() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Database'),
+        content: const Text(
+            'Are you sure you want to delete the manufacturer database?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await _ouiService.deleteDatabase();
+      if (mounted) {
+        setState(() {
+          _ouiLastUpdated = null;
+        });
+
+        await _settingsService.updateOuiDatabaseLastUpdated(null);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success
+                  ? 'Database deleted successfully'
+                  : 'Failed to delete database'),
+              backgroundColor: success ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildDataManagementCard() {

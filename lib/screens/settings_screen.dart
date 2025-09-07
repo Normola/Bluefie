@@ -557,37 +557,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final success = await _ouiService.downloadDatabase(forceUpdate: true);
 
-    if (mounted) {
-      setState(() {
-        _isDownloadingOui = false;
-      });
+    if (!mounted) return;
 
-      final lastUpdated = await _ouiService.getLastUpdateTime();
-      setState(() {
-        _ouiLastUpdated = lastUpdated;
-      });
+    setState(() {
+      _isDownloadingOui = false;
+    });
 
-      if (success) {
-        await settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OUI database downloaded successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to download OUI database'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+    final lastUpdated = await _ouiService.getLastUpdateTime();
+    setState(() {
+      _ouiLastUpdated = lastUpdated;
+    });
+
+    if (success) {
+      await settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
+      _showDownloadSuccessMessage();
+      return;
     }
+
+    _showDownloadFailureMessage();
+  }
+
+  void _showDownloadSuccessMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('OUI database downloaded successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showDownloadFailureMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to download OUI database'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<void> _deleteOuiDatabase() async {
@@ -612,27 +621,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (confirm == true) {
-      final success = await _ouiService.deleteDatabase();
-      if (mounted) {
-        setState(() {
-          _ouiLastUpdated = null;
-        });
+    if (confirm != true) return;
+    if (!mounted) return;
 
-        await settingsService.updateOuiDatabaseLastUpdated(null);
+    final success = await _ouiService.deleteDatabase();
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(success
-                  ? 'Database deleted successfully'
-                  : 'Failed to delete database'),
-              backgroundColor: success ? Colors.green : Colors.red,
-            ),
-          );
-        }
-      }
-    }
+    setState(() {
+      _ouiLastUpdated = null;
+    });
+
+    await settingsService.updateOuiDatabaseLastUpdated(null);
+    _showDeleteResultMessage(success);
+  }
+
+  void _showDeleteResultMessage(bool success) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Database deleted successfully'
+            : 'Failed to delete database'),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   Widget _buildDataManagementCard() {
@@ -882,87 +894,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final exportService = DataExportService();
 
     try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Exporting data...'),
-            ],
-          ),
-        ),
-      );
+      _showExportLoadingDialog();
 
-      // Perform the export
       final String? filePath = await exportService.exportAllDataToJson();
 
-      // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
       if (filePath == null) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Export failed')),
-        );
+        _showExportFailedMessage();
         return;
       }
 
       if (!mounted) return;
 
-      // Show success dialog with sharing option
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Export Successful'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Data exported successfully!'),
-              const SizedBox(height: 8),
-              Text('File: ${filePath.split('/').last}'),
-              const SizedBox(height: 8),
-              Text('Location: $filePath'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await exportService.shareExportedFile(filePath);
-                } catch (e) {
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('Error sharing file: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Share'),
-            ),
+      _showExportSuccessDialog(filePath, exportService);
+    } catch (e) {
+      _handleExportError(e);
+    }
+  }
+
+  void _showExportLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Exporting data...'),
           ],
         ),
-      );
+      ),
+    );
+  }
+
+  void _showExportFailedMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export failed')),
+    );
+  }
+
+  void _showExportSuccessDialog(
+      String filePath, DataExportService exportService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Successful'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Data exported successfully!'),
+            const SizedBox(height: 8),
+            Text('File: ${filePath.split('/').last}'),
+            const SizedBox(height: 8),
+            Text('Location: $filePath'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () => _shareExportedFile(filePath, exportService),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareExportedFile(
+      String filePath, DataExportService exportService) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await exportService.shareExportedFile(filePath);
     } catch (e) {
-      // Close loading dialog if still open
-      if (mounted) Navigator.of(context).pop();
-
-      // Show error message
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export error: $e')),
-      );
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error sharing file: $e')),
+        );
+      }
     }
+  }
+
+  void _handleExportError(Object e) {
+    if (mounted) Navigator.of(context).pop();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Export error: $e')),
+    );
   }
 }

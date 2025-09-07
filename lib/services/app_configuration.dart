@@ -8,6 +8,7 @@ import 'logging_service.dart';
 import 'navigation_observer_service.dart';
 import 'oui_service.dart';
 import 'settings_service.dart';
+import 'sig_service.dart';
 
 /// Interface for app initialization and configuration
 abstract class AppConfigurationInterface {
@@ -35,6 +36,7 @@ class AppConfiguration implements AppConfigurationInterface {
     await BatteryService().initialize();
     await BluetoothScanningService().initialize();
     await OuiService().initialize();
+    await SigService().initialize();
 
     // Initialize app lifecycle monitoring
     AppLifecycleService().initialize();

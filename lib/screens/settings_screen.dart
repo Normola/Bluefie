@@ -9,6 +9,7 @@ import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
 import '../services/oui_service.dart';
 import '../services/settings_service.dart';
+import '../services/sig_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -20,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Service instances - using singleton pattern
   final OuiService _ouiService = OuiService();
+  final SigService _sigService = SigService();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
@@ -28,11 +30,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDownloadingOui = false;
   double _ouiDownloadProgress = 0.0;
   DateTime? _ouiLastUpdated;
+  bool _isDownloadingSig = false;
+  double _sigDownloadProgress = 0.0;
+  DateTime? _sigLastUpdated;
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
   StreamSubscription<double>? _ouiDownloadSubscription;
+  StreamSubscription<double>? _sigDownloadSubscription;
 
   @override
   void initState() {
@@ -51,6 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _batteryStatusText = batteryService.getBatteryStatusText();
     _currentLifecycleState = lifecycleService.currentState;
     await _initializeOuiService();
+    await _initializeSigService();
   }
 
   Future<void> _initializeOuiService() async {
@@ -59,6 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() {
         _ouiLastUpdated = lastUpdated;
+      });
+    }
+  }
+
+  Future<void> _initializeSigService() async {
+    await _sigService.initialize();
+    final lastUpdated = await _sigService.getLastUpdateTime();
+    if (mounted) {
+      setState(() {
+        _sigLastUpdated = lastUpdated;
       });
     }
   }
@@ -103,6 +120,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _isDownloadingOui = progress < 1.0 && progress > 0.0;
       });
     });
+
+    _sigDownloadSubscription =
+        _sigService.downloadProgressStream.listen((progress) {
+      if (!mounted) return;
+
+      setState(() {
+        _sigDownloadProgress = progress;
+        _isDownloadingSig = progress < 1.0 && progress > 0.0;
+      });
+    });
   }
 
   @override
@@ -111,6 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _batteryLevelSubscription?.cancel();
     _lifecycleSubscription?.cancel();
     _ouiDownloadSubscription?.cancel();
+    _sigDownloadSubscription?.cancel();
     super.dispose();
   }
 
@@ -156,6 +184,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAdvancedSettingsCard(),
           const SizedBox(height: 16),
           _buildOuiDatabaseCard(),
+          const SizedBox(height: 16),
+          _buildSigDatabaseCard(),
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
@@ -642,6 +672,222 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(success
             ? 'Database deleted successfully'
             : 'Failed to delete database'),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
+  Widget _buildSigDatabaseCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bluetooth SIG Database',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Show Service & Characteristic Names'),
+              subtitle: const Text(
+                  'Display Bluetooth SIG assigned names for services and characteristics'),
+              value: _settings.sigDatabaseEnabled,
+              onChanged: (value) {
+                SettingsService().updateSigDatabaseEnabled(value);
+              },
+            ),
+            if (_settings.sigDatabaseEnabled) ...[
+              const Divider(),
+              _buildSigDatabaseStatus(),
+              const SizedBox(height: 12),
+              _buildSigDatabaseActions(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSigDatabaseStatus() {
+    if (_isDownloadingSig) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                  'Downloading SIG databases... ${(_sigDownloadProgress * 100).toInt()}%'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: _sigDownloadProgress),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              _sigService.isLoaded ? Icons.check_circle : Icons.info,
+              color: _sigService.isLoaded ? Colors.green : Colors.orange,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _sigService.isLoaded
+                    ? 'Databases loaded (Services: ${_sigService.servicesCount}, Characteristics: ${_sigService.characteristicsCount})'
+                    : 'SIG databases not downloaded',
+              ),
+            ),
+          ],
+        ),
+        if (_sigLastUpdated != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 32, top: 4),
+            child: Row(
+              children: [
+                Text(
+                  'Last updated: ${_formatDate(_sigLastUpdated!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSigDatabaseActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isDownloadingSig ? null : _downloadSigDatabase,
+            icon: const Icon(Icons.download),
+            label: Text(_sigService.isLoaded
+                ? 'Update Databases'
+                : 'Download Databases'),
+          ),
+        ),
+        if (_sigService.isLoaded) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isDownloadingSig ? null : _deleteSigDatabase,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _downloadSigDatabase() async {
+    final settingsService = SettingsService();
+
+    setState(() {
+      _isDownloadingSig = true;
+    });
+
+    final success = await _sigService.downloadDatabase(forceUpdate: true);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isDownloadingSig = false;
+    });
+
+    final lastUpdated = await _sigService.getLastUpdateTime();
+    setState(() {
+      _sigLastUpdated = lastUpdated;
+    });
+
+    if (success) {
+      await settingsService.updateSigDatabaseLastUpdated(lastUpdated);
+      _showSigDownloadSuccessMessage();
+      return;
+    }
+
+    _showSigDownloadFailureMessage();
+  }
+
+  void _showSigDownloadSuccessMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('SIG databases downloaded successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showSigDownloadFailureMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to download SIG databases'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _deleteSigDatabase() async {
+    final settingsService = SettingsService();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete SIG Databases'),
+        content: const Text(
+            'Are you sure you want to delete the Bluetooth SIG databases?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    final success = await _sigService.deleteDatabase();
+
+    setState(() {
+      _sigLastUpdated = null;
+    });
+
+    await settingsService.updateSigDatabaseLastUpdated(null);
+    _showSigDeleteResultMessage(success);
+  }
+
+  void _showSigDeleteResultMessage(bool success) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'SIG databases deleted successfully'
+            : 'Failed to delete SIG databases'),
         backgroundColor: success ? Colors.green : Colors.red,
       ),
     );

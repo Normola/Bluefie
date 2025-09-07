@@ -277,7 +277,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 margin: const EdgeInsets.only(bottom: 16.0),
                 decoration: BoxDecoration(
                   color: (_isScanning ? Colors.blue : Colors.green)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8.0),
                   border: Border.all(
                     color: _isScanning ? Colors.blue : Colors.green,

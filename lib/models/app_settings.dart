@@ -11,6 +11,8 @@ class AppSettings {
   final bool autoScanWhenPluggedIn;
   final bool ouiDatabaseEnabled;
   final DateTime? ouiDatabaseLastUpdated;
+  final bool sigDatabaseEnabled;
+  final DateTime? sigDatabaseLastUpdated;
 
   const AppSettings({
     this.autoScanningEnabled = false,
@@ -26,6 +28,8 @@ class AppSettings {
     this.autoScanWhenPluggedIn = false,
     this.ouiDatabaseEnabled = false,
     this.ouiDatabaseLastUpdated,
+    this.sigDatabaseEnabled = false,
+    this.sigDatabaseLastUpdated,
   });
 
   AppSettings copyWith({
@@ -41,6 +45,8 @@ class AppSettings {
     bool? autoScanWhenPluggedIn,
     bool? ouiDatabaseEnabled,
     DateTime? ouiDatabaseLastUpdated,
+    bool? sigDatabaseEnabled,
+    DateTime? sigDatabaseLastUpdated,
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
@@ -62,6 +68,9 @@ class AppSettings {
       ouiDatabaseEnabled: ouiDatabaseEnabled ?? this.ouiDatabaseEnabled,
       ouiDatabaseLastUpdated:
           ouiDatabaseLastUpdated ?? this.ouiDatabaseLastUpdated,
+      sigDatabaseEnabled: sigDatabaseEnabled ?? this.sigDatabaseEnabled,
+      sigDatabaseLastUpdated:
+          sigDatabaseLastUpdated ?? this.sigDatabaseLastUpdated,
     );
   }
 
@@ -79,6 +88,8 @@ class AppSettings {
       'autoScanWhenPluggedIn': autoScanWhenPluggedIn,
       'ouiDatabaseEnabled': ouiDatabaseEnabled,
       'ouiDatabaseLastUpdated': ouiDatabaseLastUpdated?.millisecondsSinceEpoch,
+      'sigDatabaseEnabled': sigDatabaseEnabled,
+      'sigDatabaseLastUpdated': sigDatabaseLastUpdated?.millisecondsSinceEpoch,
     };
   }
 
@@ -101,6 +112,13 @@ class AppSettings {
               ? DateTime.fromMillisecondsSinceEpoch(
                   json['ouiDatabaseLastUpdated'])
               : DateTime.parse(json['ouiDatabaseLastUpdated']))
+          : null,
+      sigDatabaseEnabled: json['sigDatabaseEnabled'] ?? false,
+      sigDatabaseLastUpdated: json['sigDatabaseLastUpdated'] != null
+          ? (json['sigDatabaseLastUpdated'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(
+                  json['sigDatabaseLastUpdated'])
+              : DateTime.parse(json['sigDatabaseLastUpdated']))
           : null,
     );
   }

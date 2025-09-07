@@ -16,6 +16,7 @@ import 'battery_monitor_screen.dart';
 import 'device_history_screen.dart';
 import 'device_screen.dart';
 import 'settings_screen.dart';
+import 'watch_list_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -683,6 +684,16 @@ class _ScanScreenState extends State<ScanScreen> {
 
                 Snackbar.show(ABC.b, 'Could not get location', success: false);
               },
+            ),
+            IconButton(
+              icon: const Icon(Icons.watch_later),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => const WatchListScreen()),
+                );
+              },
+              tooltip: 'Watch List',
             ),
             IconButton(
               icon: const Icon(Icons.settings),

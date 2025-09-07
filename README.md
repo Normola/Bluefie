@@ -9,6 +9,7 @@ A comprehensive Flutter application for continuous Bluetooth device enumeration 
 - **GPS Location Tracking**: Records the precise location where each device was discovered
 - **Database Storage**: Stores all discovered devices with comprehensive metadata in a local SQLite database
 - **Real-time Updates**: Live updates of scanning statistics and device counts
+- **Device Watch List**: Monitor specific devices and receive audio alerts when they re-appear after leaving detection range
 
 ### Data Collection
 Each discovered device is stored with the following information:
@@ -24,10 +25,19 @@ Each discovered device is stored with the following information:
 ### User Interface
 - **Scan Screen**: Main interface with manual and automatic scanning controls
 - **Device History**: Comprehensive view of all discovered devices
+- **Watch List Screen**: Real-time monitoring of watched devices with event tracking and status updates
 - **Statistics Dashboard**: Real-time scanning metrics and device counts
+- **Settings Screen**: Configuration for scanning, battery optimization, and watch list management
 - **Location Integration**: Current location display and tracking
 
 ## Recent Updates
+
+### 🔔 Device Watch List Feature (September 2025)
+- **Watch List Management**: Add specific devices to a watch list for monitoring
+- **Audio Alerts**: Configurable sound notifications when watched devices re-appear after leaving detection range
+- **Real-time Event Monitoring**: Dedicated screen for viewing watch list events and device status
+- **Settings Integration**: Complete UI for managing watch list devices and alert preferences
+- **Background Processing**: Automatic monitoring integrated with continuous scanning service
 
 ### 🧪 Testing Infrastructure (September 2025)
 - **Comprehensive Unit Tests**: Added 38+ unit tests with ≥80% coverage requirement
@@ -134,12 +144,26 @@ For detailed setup instructions including signing configuration and Play Store d
 - **Clear Data**: Remove all stored device records
 - **Cleanup**: Remove records older than 7 days
 
+### Using the Watch List Feature
+1. **Enable Watch List**: Go to Settings → Device Watch List → Toggle "Enable Watch List"
+2. **Add Devices**:
+   - Tap "Watched Devices" in settings
+   - Enter MAC address (format: XX:XX:XX:XX:XX:XX)
+   - Click "Add Device" to add to watch list
+3. **Configure Audio Alerts**: Toggle "Audio Alerts" in watch list settings for sound notifications
+4. **Monitor Events**:
+   - Tap the watch icon in the main scan screen
+   - View real-time events when devices appear/disappear
+   - See current status of all watched devices
+5. **Remove Devices**: In the device management dialog, tap the delete icon next to any device
+
 ## Technical Architecture
 
 ### Core Services
 - **AppConfiguration**: Central service initialization and lifecycle management
 - **AppLifecycleService**: Application state monitoring and background/foreground transitions
 - **BluetoothScanningService**: Manages continuous scanning and data processing
+- **WatchListService**: Device watch list management with audio alerts and event tracking
 - **LocationService**: Handles GPS tracking and permission management
 - **SettingsService**: Centralized application settings and preferences management
 - **BatteryService**: Battery level monitoring and optimization

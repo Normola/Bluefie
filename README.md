@@ -27,6 +27,31 @@ Each discovered device is stored with the following information:
 - **Statistics Dashboard**: Real-time scanning metrics and device counts
 - **Location Integration**: Current location display and tracking
 
+## Recent Updates
+
+### 🧪 Testing Infrastructure (September 2025)
+- **Comprehensive Unit Tests**: Added 38+ unit tests with ≥80% coverage requirement
+- **Automated Testing**: CI/CD pipeline includes test validation and coverage reporting
+- **Mock Framework**: Complete mocking infrastructure for platform dependencies
+- **Test Categories**: Unit tests for models, services, utilities, and widget tests
+
+### 🏗️ Service Architecture Improvements
+- **Singleton Services**: Implemented proper singleton pattern for OUI and Settings services
+- **Service Lifecycle Management**: Added AppLifecycleService for proper application state management
+- **Configuration Service**: Centralized service initialization and management
+- **Platform Exception Handling**: Robust error handling for platform-dependent operations
+
+### 📱 Enhanced Device Identification
+- **OUI Database Integration**: Manufacturer identification using IEEE OUI database
+- **Device Metadata**: Enhanced device information with manufacturer details
+- **Database Optimization**: Improved SQLite schema and query performance
+
+### 🔧 Development Quality Improvements
+- **Strict Coding Standards**: Enforced no-else statements and minimal nesting patterns
+- **APK Size Monitoring**: CI validation ensures release APKs stay under 50MB
+- **Automated Dependencies**: Monthly dependency updates with automated PR creation
+- **Code Coverage**: Mandatory 80% unit test coverage for all new code
+
 ## Installation
 
 1. **Clone the repository**:
@@ -58,6 +83,7 @@ This project includes comprehensive GitHub Actions workflows for automated testi
 - **Triggers**: Push to main branches, Pull Requests
 - **Features**: Code analysis, testing, debug builds, security checks
 - **Coverage**: Automatic test coverage reporting via Codecov
+- **Quality Gates**: Enforces 80% unit test coverage requirement
 
 ### 🏗️ Android Build Pipeline (`android-build.yml`)
 - **Triggers**: Push, PR, Manual dispatch
@@ -110,10 +136,21 @@ For detailed setup instructions including signing configuration and Play Store d
 
 ## Technical Architecture
 
-### Services
+### Core Services
+- **AppConfiguration**: Central service initialization and lifecycle management
+- **AppLifecycleService**: Application state monitoring and background/foreground transitions
 - **BluetoothScanningService**: Manages continuous scanning and data processing
 - **LocationService**: Handles GPS tracking and permission management
+- **SettingsService**: Centralized application settings and preferences management
+- **BatteryService**: Battery level monitoring and optimization
+- **OuiService**: IEEE OUI database for device manufacturer identification
 - **DatabaseHelper**: SQLite database operations and data persistence
+
+### Service Architecture
+- **Singleton Pattern**: All services implement proper singleton pattern for consistent state
+- **Dependency Injection**: Clean service initialization with proper dependency management
+- **Error Handling**: Comprehensive platform exception handling and graceful degradation
+- **Testing Support**: Full mocking infrastructure for reliable unit testing
 
 ### Models
 - **BluetoothDeviceRecord**: Data model for discovered devices
@@ -198,6 +235,14 @@ This project follows strict coding style rules for consistency and readability:
 2. Ensure your IDE follows the settings in `.vscode/settings.json`
 3. Run `flutter analyze` to check for style violations
 4. All new code must follow the no-else, minimal-nesting pattern
+5. **Maintain ≥80% unit test coverage** - run `flutter test --coverage` to verify
+
+#### Testing Requirements
+- **Minimum unit test coverage: 80%** - All changes must maintain or improve coverage
+- Add unit tests for all new services, models, and utility functions
+- Mock external dependencies (SharedPreferences, platform channels, etc.)
+- Handle platform exceptions gracefully in test environments
+- Run `flutter test --coverage` before submitting PRs
 
 #### Example Code Patterns
 
@@ -233,6 +278,20 @@ if (isValid) {
 This project is licensed under the BSD-style license found in the LICENSE file.
 Simple UI for Blufie
 ## Development
+
+### Testing Standards
+**Unit Test Coverage Requirement: ≥80%**
+
+Before committing changes:
+```bash
+# Run tests with coverage
+flutter test --coverage
+
+# Check test results in coverage/lcov.info
+# Use VS Code extensions: Flutter Coverage, Coverage Gutters
+```
+
+See detailed testing instructions in [test/README.md](test/README.md).
 
 ### Code Formatting
 This project uses automatic code formatting to maintain consistent code style.

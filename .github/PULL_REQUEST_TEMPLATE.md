@@ -13,6 +13,7 @@ Brief description of changes made.
 ## Testing
 - [ ] Tests pass locally
 - [ ] New tests added for changes (if applicable)
+- [ ] **Unit test coverage ≥80%** (run `flutter test --coverage` to verify)
 - [ ] Manual testing completed
 
 ## APK Size Impact

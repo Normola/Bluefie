@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import '../services/sig_service.dart';
 import '../utils/extra.dart';
 import '../utils/snackbar.dart';
 import '../widgets/characteristic_tile.dart';
@@ -154,23 +155,39 @@ class _DeviceScreenState extends State<DeviceScreen> {
   }
 
   List<Widget> _buildServiceTiles(BuildContext context, BluetoothDevice d) {
-    return _services
-        .map(
-          (s) => ServiceTile(
-            service: s,
-            characteristicTiles: s.characteristics
-                .map((c) => _buildCharacteristicTile(c))
-                .toList(),
-          ),
-        )
-        .toList();
+    final sigService = SigService();
+    return _services.map(
+      (s) {
+        final serviceName = sigService.getServiceName(s.uuid.toString());
+        return ServiceTile(
+          service: s,
+          serviceName: serviceName,
+          characteristicTiles: s.characteristics
+              .map((c) => _buildCharacteristicTile(c, sigService))
+              .toList(),
+        );
+      },
+    ).toList();
   }
 
-  CharacteristicTile _buildCharacteristicTile(BluetoothCharacteristic c) {
+  CharacteristicTile _buildCharacteristicTile(
+      BluetoothCharacteristic c, SigService sigService) {
+    final charName = sigService.getCharacteristicName(c.uuid.toString());
     return CharacteristicTile(
       characteristic: c,
-      descriptorTiles:
-          c.descriptors.map((d) => DescriptorTile(descriptor: d)).toList(),
+      characteristicName: charName,
+      descriptorTiles: c.descriptors
+          .map((d) => _buildDescriptorTile(d, sigService))
+          .toList(),
+    );
+  }
+
+  DescriptorTile _buildDescriptorTile(
+      BluetoothDescriptor d, SigService sigService) {
+    final descName = sigService.getDescriptorName(d.uuid.toString());
+    return DescriptorTile(
+      descriptor: d,
+      descriptorName: descName,
     );
   }
 

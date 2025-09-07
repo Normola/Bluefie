@@ -8,8 +8,13 @@ import '../utils/snackbar.dart';
 
 class DescriptorTile extends StatefulWidget {
   final BluetoothDescriptor descriptor;
+  final String? descriptorName;
 
-  const DescriptorTile({super.key, required this.descriptor});
+  const DescriptorTile({
+    super.key,
+    required this.descriptor,
+    this.descriptorName,
+  });
 
   @override
   State<DescriptorTile> createState() => _DescriptorTileState();
@@ -105,12 +110,18 @@ class _DescriptorTileState extends State<DescriptorTile> {
 
   @override
   Widget build(BuildContext context) {
+    final nameWidget =
+        widget.descriptorName != null && widget.descriptorName!.isNotEmpty
+            ? Text(widget.descriptorName!,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.blue))
+            : const Text('Descriptor', style: TextStyle(color: Colors.blue));
     return ListTile(
       title: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text('Descriptor'),
+          nameWidget,
           buildUuid(context),
           buildValue(context),
         ],

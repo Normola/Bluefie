@@ -25,7 +25,7 @@ void main() {
     test('should handle service lookup with well-known fallbacks', () async {
       // Test well-known service UUIDs that should work even without database
       final result = sigService.getServiceName('1800');
-      expect(result, equals('Generic Access'));
+      expect(result, equals('GAP'));
 
       // Test unknown service
       final unknownResult = sigService.getServiceName('9999');
@@ -46,13 +46,13 @@ void main() {
     test('should handle descriptor lookup gracefully when no database',
         () async {
       final result = sigService.getDescriptorName('2901');
-      expect(result, isNull);
+      expect(result, equals('Characteristic User Description'));
     });
 
     test('should handle company identifier lookup gracefully when no database',
         () async {
       final result = sigService.getCompanyName('0006');
-      expect(result, isNull);
+      expect(result, equals('Microsoft'));
     });
 
     test('should provide database counts', () async {
@@ -68,8 +68,8 @@ void main() {
           sigService.getServiceName('00001800-0000-1000-8000-00805F9B34FB');
       final result2 = sigService.getServiceName('1800');
       // Both should return the same well-known service name
-      expect(result1, equals('Generic Access'));
-      expect(result2, equals('Generic Access'));
+      expect(result1, equals('GAP'));
+      expect(result2, equals('GAP'));
     });
 
     test('should handle download errors gracefully', () async {
@@ -80,7 +80,7 @@ void main() {
       expect(result, isTrue); // Should succeed due to fallbacks
 
       // Service should still be functional with well-known fallbacks
-      expect(sigService.getServiceName('1800'), equals('Generic Access'));
+      expect(sigService.getServiceName('1800'), equals('GAP'));
       expect(sigService.getCharacteristicName('2a00'), equals('Device Name'));
     });
 

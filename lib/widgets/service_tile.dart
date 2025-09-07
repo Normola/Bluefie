@@ -6,10 +6,15 @@ import 'characteristic_tile.dart';
 class ServiceTile extends StatelessWidget {
   final BluetoothService service;
   final List<CharacteristicTile> characteristicTiles;
+  final String? serviceName;
 
-  const ServiceTile(
-      {super.key, required this.service, required this.characteristicTiles});
-
+  const ServiceTile({
+    super.key,
+    required this.service,
+    required this.characteristicTiles,
+    this.serviceName,
+  });
+  // Removed duplicate constructor
   Widget buildUuid(BuildContext context) {
     final String uuid = '0x${service.uuid.str.toUpperCase()}';
     return Text(uuid, style: const TextStyle(fontSize: 13));
@@ -23,7 +28,12 @@ class ServiceTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('Service', style: TextStyle(color: Colors.blue)),
+                serviceName != null && serviceName!.isNotEmpty
+                    ? Text(serviceName!,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.blue))
+                    : const Text('Service',
+                        style: TextStyle(color: Colors.blue)),
                 buildUuid(context),
               ],
             ),

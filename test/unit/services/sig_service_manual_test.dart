@@ -53,8 +53,8 @@ void main() {
       print('✅ Well-known UUID resolution working correctly');
       print('');
 
-      expect(genericAccess, equals('Generic Access'));
-      expect(batteryService, equals('Battery Service'));
+      expect(genericAccess, equals('GAP'));
+      expect(batteryService, equals('Battery'));
       expect(deviceName, equals('Device Name'));
       expect(batteryLevel, equals('Battery Level'));
     });

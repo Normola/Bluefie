@@ -10,15 +10,30 @@ import 'descriptor_tile.dart';
 class CharacteristicTile extends StatefulWidget {
   final BluetoothCharacteristic characteristic;
   final List<DescriptorTile> descriptorTiles;
+  final String? characteristicName;
 
-  const CharacteristicTile(
-      {super.key, required this.characteristic, required this.descriptorTiles});
-
+  const CharacteristicTile({
+    super.key,
+    required this.characteristic,
+    required this.descriptorTiles,
+    this.characteristicName,
+  });
+  // Removed duplicate constructor
   @override
   State<CharacteristicTile> createState() => _CharacteristicTileState();
 }
 
 class _CharacteristicTileState extends State<CharacteristicTile> {
+  Widget buildName(BuildContext context) {
+    if (widget.characteristicName != null &&
+        widget.characteristicName!.isNotEmpty) {
+      return Text(widget.characteristicName!,
+          style:
+              const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue));
+    }
+    return const Text('Characteristic', style: TextStyle(color: Colors.blue));
+  }
+
   List<int> _value = [];
 
   late StreamSubscription<List<int>> _lastValueSubscription;
@@ -156,20 +171,19 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      title: ListTile(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text('Characteristic'),
-            buildUuid(context),
-            buildValue(context),
-          ],
-        ),
-        subtitle: buildButtonRow(context),
-        contentPadding: const EdgeInsets.all(0.0),
+      title: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          buildName(context),
+          buildUuid(context),
+        ],
       ),
-      children: widget.descriptorTiles,
+      children: [
+        ...widget.descriptorTiles,
+        buildValue(context),
+        buildButtonRow(context),
+      ],
     );
   }
 }

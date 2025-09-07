@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master, main, develop]
 
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: '3.35.3'
   JAVA_VERSION: '17'

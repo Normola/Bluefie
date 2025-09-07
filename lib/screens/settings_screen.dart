@@ -7,6 +7,7 @@ import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
+import '../services/database_helper.dart';
 import '../services/oui_service.dart';
 import '../services/settings_service.dart';
 import '../services/sig_service.dart';
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Service instances - using singleton pattern
   final OuiService _ouiService = OuiService();
   final SigService _sigService = SigService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
@@ -34,6 +36,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDownloadingSig = false;
   double _sigDownloadProgress = 0.0;
   DateTime? _sigLastUpdated;
+
+  // Database information
+  int _totalDeviceRecords = 0;
+  int _uniqueDevices = 0;
+  String _databaseSize = '0 B';
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
@@ -59,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _currentLifecycleState = lifecycleService.currentState;
     await _initializeOuiService();
     await _initializeSigService();
+    await _initializeDatabaseInfo();
   }
 
   Future<void> _initializeOuiService() async {
@@ -79,6 +87,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _sigLastUpdated = lastUpdated;
       });
     }
+  }
+
+  Future<void> _initializeDatabaseInfo() async {
+    try {
+      final totalRecords = await _databaseHelper.getDeviceCount();
+      final uniqueDevices = await _databaseHelper.getUniqueDeviceCount();
+      final databaseSize = await _databaseHelper.getFormattedDatabaseSize();
+
+      if (mounted) {
+        setState(() {
+          _totalDeviceRecords = totalRecords;
+          _uniqueDevices = uniqueDevices;
+          _databaseSize = databaseSize;
+        });
+      }
+    } catch (e) {
+      // Handle error silently - database info is not critical
+    }
+  }
+
+  /// Refresh database statistics after data changes
+  Future<void> _refreshDatabaseStats() async {
+    await _initializeDatabaseInfo();
   }
 
   void _setupStreams() {
@@ -972,6 +1003,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
+            // Database statistics
+            _buildDatabaseStats(),
+            const Divider(),
             ListTile(
               title: const Text('Data Retention'),
               subtitle:
@@ -989,6 +1023,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDatabaseStats() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.storage, color: Colors.blue),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Database Statistics',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Size: $_databaseSize',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Total Records',
+                _totalDeviceRecords.toString(),
+                Icons.list_alt,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard(
+                'Unique Devices',
+                _uniqueDevices.toString(),
+                Icons.devices,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -1132,9 +1245,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 SettingsService().updateDataRetention(currentRetention);
                 Navigator.of(context).pop();
+                // Refresh database stats since data retention might have cleaned up old records
+                await _refreshDatabaseStats();
               },
               child: const Text('Save'),
             ),
@@ -1221,6 +1336,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
 
       _showExportSuccessDialog(filePath, exportService);
+
+      // Refresh database stats after export (in case export includes cleanup operations)
+      await _refreshDatabaseStats();
     } catch (e) {
       _handleExportError(e);
     }

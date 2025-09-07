@@ -11,6 +11,9 @@ class AppSettings {
   final bool autoScanWhenPluggedIn;
   final bool ouiDatabaseEnabled;
   final DateTime? ouiDatabaseLastUpdated;
+  final bool watchListEnabled;
+  final bool watchListAudioAlertsEnabled;
+  final List<String> watchListDevices;
 
   const AppSettings({
     this.autoScanningEnabled = false,
@@ -26,6 +29,9 @@ class AppSettings {
     this.autoScanWhenPluggedIn = false,
     this.ouiDatabaseEnabled = false,
     this.ouiDatabaseLastUpdated,
+    this.watchListEnabled = false,
+    this.watchListAudioAlertsEnabled = true,
+    this.watchListDevices = const [],
   });
 
   AppSettings copyWith({
@@ -41,6 +47,9 @@ class AppSettings {
     bool? autoScanWhenPluggedIn,
     bool? ouiDatabaseEnabled,
     DateTime? ouiDatabaseLastUpdated,
+    bool? watchListEnabled,
+    bool? watchListAudioAlertsEnabled,
+    List<String>? watchListDevices,
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
@@ -62,6 +71,10 @@ class AppSettings {
       ouiDatabaseEnabled: ouiDatabaseEnabled ?? this.ouiDatabaseEnabled,
       ouiDatabaseLastUpdated:
           ouiDatabaseLastUpdated ?? this.ouiDatabaseLastUpdated,
+      watchListEnabled: watchListEnabled ?? this.watchListEnabled,
+      watchListAudioAlertsEnabled:
+          watchListAudioAlertsEnabled ?? this.watchListAudioAlertsEnabled,
+      watchListDevices: watchListDevices ?? this.watchListDevices,
     );
   }
 
@@ -79,6 +92,9 @@ class AppSettings {
       'autoScanWhenPluggedIn': autoScanWhenPluggedIn,
       'ouiDatabaseEnabled': ouiDatabaseEnabled,
       'ouiDatabaseLastUpdated': ouiDatabaseLastUpdated?.millisecondsSinceEpoch,
+      'watchListEnabled': watchListEnabled,
+      'watchListAudioAlertsEnabled': watchListAudioAlertsEnabled,
+      'watchListDevices': watchListDevices,
     };
   }
 
@@ -102,6 +118,9 @@ class AppSettings {
                   json['ouiDatabaseLastUpdated'])
               : DateTime.parse(json['ouiDatabaseLastUpdated']))
           : null,
+      watchListEnabled: json['watchListEnabled'] ?? false,
+      watchListAudioAlertsEnabled: json['watchListAudioAlertsEnabled'] ?? true,
+      watchListDevices: List<String>.from(json['watchListDevices'] ?? []),
     );
   }
 
@@ -119,7 +138,10 @@ class AppSettings {
         'showNotifications: $showNotifications, '
         'autoScanWhenPluggedIn: $autoScanWhenPluggedIn, '
         'ouiDatabaseEnabled: $ouiDatabaseEnabled, '
-        'ouiDatabaseLastUpdated: $ouiDatabaseLastUpdated'
+        'ouiDatabaseLastUpdated: $ouiDatabaseLastUpdated, '
+        'watchListEnabled: $watchListEnabled, '
+        'watchListAudioAlertsEnabled: $watchListAudioAlertsEnabled, '
+        'watchListDevices: $watchListDevices'
         ')';
   }
 }

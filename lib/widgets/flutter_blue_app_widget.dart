@@ -25,7 +25,8 @@ class FlutterBlueAppWidget extends StatefulWidget {
   State<FlutterBlueAppWidget> createState() => _FlutterBlueAppWidgetState();
 }
 
-class _FlutterBlueAppWidgetState extends State<FlutterBlueAppWidget> {
+class _FlutterBlueAppWidgetState extends State<FlutterBlueAppWidget>
+    with WidgetsBindingObserver {
   BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
   late StreamSubscription<BluetoothAdapterState> _adapterStateSubscription;
   late BluetoothNavigationObserverInterface _navigationObserver;
@@ -33,6 +34,7 @@ class _FlutterBlueAppWidgetState extends State<FlutterBlueAppWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Initialize state with current value
     _adapterState = widget.bluetoothAdapter.currentState;
@@ -52,7 +54,32 @@ class _FlutterBlueAppWidgetState extends State<FlutterBlueAppWidget> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Log lifecycle changes for debugging
+    debugPrint('App lifecycle changed to: $state');
+
+    // Notify the navigation observer about lifecycle changes
+    // This can be used to pause/resume global services
+    switch (state) {
+      case AppLifecycleState.paused:
+        debugPrint('App entered background - global services may be paused');
+        break;
+      case AppLifecycleState.resumed:
+        debugPrint('App returned to foreground - global services resumed');
+        break;
+      case AppLifecycleState.detached:
+        debugPrint('App is being terminated');
+        break;
+      default:
+        break;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _adapterStateSubscription.cancel();
     _navigationObserver.dispose();
     super.dispose();

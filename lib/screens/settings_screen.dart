@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
+import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
@@ -20,13 +21,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final BatteryService _batteryService = BatteryService();
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final DataExportService _exportService = DataExportService();
+  final AppLifecycleService _lifecycleService = AppLifecycleService();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
+  AppLifecycleState _currentLifecycleState = AppLifecycleState.resumed;
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
+  StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
 
   @override
   void initState() {
@@ -39,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _settings = _settingsService.currentSettings;
     _currentBatteryLevel = _batteryService.currentBatteryLevel;
     _batteryStatusText = _batteryService.getBatteryStatusText();
+    _currentLifecycleState = _lifecycleService.currentState;
   }
 
   void _setupStreams() {
@@ -59,12 +64,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _batteryStatusText = _batteryService.getBatteryStatusText();
       });
     });
+
+    _lifecycleSubscription = _lifecycleService.lifecycleStream.listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _currentLifecycleState = state;
+      });
+    });
   }
 
   @override
   void dispose() {
     _settingsSubscription?.cancel();
     _batteryLevelSubscription?.cancel();
+    _lifecycleSubscription?.cancel();
     super.dispose();
   }
 
@@ -99,6 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          _buildAppStatusCard(),
+          const SizedBox(height: 16),
           _buildBatteryStatusCard(),
           const SizedBox(height: 16),
           _buildScanningSettingsCard(),
@@ -109,6 +125,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAppStatusCard() {
+    final String lifecycleText = switch (_currentLifecycleState) {
+      AppLifecycleState.resumed => 'Active',
+      AppLifecycleState.paused => 'Background',
+      AppLifecycleState.inactive => 'Inactive',
+      AppLifecycleState.detached => 'Detached',
+      AppLifecycleState.hidden => 'Hidden',
+    };
+
+    final Color statusColor = switch (_currentLifecycleState) {
+      AppLifecycleState.resumed => Colors.green,
+      AppLifecycleState.paused => Colors.orange,
+      AppLifecycleState.inactive => Colors.yellow,
+      AppLifecycleState.detached => Colors.red,
+      AppLifecycleState.hidden => Colors.grey,
+    };
+
+    final IconData statusIcon = switch (_currentLifecycleState) {
+      AppLifecycleState.resumed => Icons.smartphone,
+      AppLifecycleState.paused => Icons.pause_circle,
+      AppLifecycleState.inactive => Icons.pause,
+      AppLifecycleState.detached => Icons.power_off,
+      AppLifecycleState.hidden => Icons.visibility_off,
+    };
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'App Status',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  statusIcon,
+                  color: statusColor,
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Status: $lifecycleText',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      _currentLifecycleState == AppLifecycleState.paused
+                          ? 'Background monitoring ${_settings.batteryOptimizationEnabled ? 'disabled' : 'enabled'}'
+                          : 'Foreground monitoring active',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

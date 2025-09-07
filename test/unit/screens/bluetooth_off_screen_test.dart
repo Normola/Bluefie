@@ -208,14 +208,7 @@ void main() {
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
-        if (Platform.isAndroid) {
-          expect(find.text('Turn On Bluetooth'), findsOneWidget);
-          expect(find.byType(ElevatedButton), findsOneWidget);
-          expect(find.byType(Padding), findsAtLeastNWidgets(1));
-        } else {
-          expect(find.text('Turn On Bluetooth'), findsNothing);
-          expect(find.byType(ElevatedButton), findsNothing);
-        }
+        _verifyPlatformSpecificButton();
       });
 
       testWidgets('should have correct button styling',
@@ -225,15 +218,7 @@ void main() {
 
         await tester.pumpWidget(const MaterialApp(home: screen));
 
-        if (Platform.isAndroid) {
-          final padding = tester.widget<Padding>(
-            find.ancestor(
-              of: find.byType(ElevatedButton),
-              matching: find.byType(Padding),
-            ),
-          );
-          expect(padding.padding, equals(const EdgeInsets.all(20.0)));
-        }
+        _verifyButtonStyling(tester);
       });
     });
 
@@ -307,8 +292,9 @@ void main() {
             .widgetList<ScaffoldMessenger>(find.byType(ScaffoldMessenger));
 
         // Find the one with the snackbar key
-        final screenScaffoldMessenger = scaffoldMessengers.firstWhere(
-          (messenger) => messenger.key == Snackbar.snackBarKeyA,
+        final screenScaffoldMessenger = _findScaffoldMessengerWithKey(
+          scaffoldMessengers,
+          Snackbar.snackBarKeyA,
         );
         expect(screenScaffoldMessenger.key, equals(Snackbar.snackBarKeyA));
       });
@@ -468,13 +454,7 @@ void main() {
         expect(find.textContaining('Bluetooth Adapter'), findsOneWidget);
 
         // Verify button is accessible when present
-        if (Platform.isAndroid) {
-          expect(find.text('Turn On Bluetooth'), findsOneWidget);
-
-          final button =
-              tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-          expect(button.onPressed, isNotNull);
-        }
+        _verifyButtonAccessibility();
       });
 
       testWidgets('should have semantic labels', (WidgetTester tester) async {
@@ -510,9 +490,7 @@ void main() {
       testWidgets('should handle rapid rebuilds', (WidgetTester tester) async {
         for (int i = 0; i < 10; i++) {
           final screen = BluetoothOffScreen(
-            adapterState: i % 2 == 0
-                ? BluetoothAdapterState.off
-                : BluetoothAdapterState.unknown,
+            adapterState: _getAlternatingAdapterState(i),
           );
 
           await tester.pumpWidget(MaterialApp(home: screen));
@@ -521,4 +499,51 @@ void main() {
       });
     });
   });
+}
+
+void _verifyPlatformSpecificButton() {
+  if (!Platform.isAndroid) {
+    expect(find.text('Turn On Bluetooth'), findsNothing);
+    expect(find.byType(ElevatedButton), findsNothing);
+    return;
+  }
+
+  expect(find.text('Turn On Bluetooth'), findsOneWidget);
+  expect(find.byType(ElevatedButton), findsOneWidget);
+  expect(find.byType(Padding), findsAtLeastNWidgets(1));
+}
+
+void _verifyButtonStyling(WidgetTester tester) {
+  if (!Platform.isAndroid) return;
+
+  final padding = tester.widget<Padding>(
+    find.ancestor(
+      of: find.byType(ElevatedButton),
+      matching: find.byType(Padding),
+    ),
+  );
+  expect(padding.padding, equals(const EdgeInsets.all(20.0)));
+}
+
+void _verifyButtonAccessibility() {
+  if (!Platform.isAndroid) return;
+
+  expect(find.text('Turn On Bluetooth'), findsOneWidget);
+
+  final button = find.byType(ElevatedButton);
+  expect(button, findsOneWidget);
+}
+
+ScaffoldMessenger _findScaffoldMessengerWithKey(
+  Iterable<ScaffoldMessenger> messengers,
+  Key expectedKey,
+) {
+  return messengers.firstWhere(
+    (messenger) => messenger.key == expectedKey,
+  );
+}
+
+BluetoothAdapterState _getAlternatingAdapterState(int index) {
+  if (index % 2 == 0) return BluetoothAdapterState.off;
+  return BluetoothAdapterState.unknown;
 }

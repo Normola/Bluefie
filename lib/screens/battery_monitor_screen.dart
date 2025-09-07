@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
 
+import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/settings_service.dart';
@@ -21,6 +22,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
   final BatteryService _batteryService = BatteryService();
   final BluetoothScanningService _scanningService = BluetoothScanningService();
   final SettingsService _settingsService = SettingsService();
+  final AppLifecycleService _lifecycleService = AppLifecycleService();
 
   // State variables
   int _batteryLevel = 100;
@@ -28,6 +30,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
   bool _isLowBattery = false;
   bool _isCharging = false;
   bool _isScanning = false;
+  AppLifecycleState _currentLifecycleState = AppLifecycleState.resumed;
 
   // Battery monitoring data
   final List<BatteryReading> _batteryHistory = [];
@@ -43,6 +46,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<bool>? _lowBatterySubscription;
   StreamSubscription<bool>? _chargingStateSubscription;
+  StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
 
   @override
   void initState() {
@@ -99,6 +103,49 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
         _isCharging = isCharging;
       });
     });
+
+    // Listen to app lifecycle changes to pause/resume history tracking
+    _lifecycleSubscription = _lifecycleService.lifecycleStream.listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _currentLifecycleState = state;
+      });
+
+      _handleLifecycleChange(state);
+    });
+  }
+
+  void _handleLifecycleChange(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        // Pause history tracking when app goes to background
+        _pauseHistoryTracking();
+        break;
+      case AppLifecycleState.resumed:
+        // Resume history tracking when app comes back
+        _resumeHistoryTracking();
+        break;
+      case AppLifecycleState.detached:
+        // Stop everything when app is terminated
+        _historyTimer?.cancel();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _pauseHistoryTracking() {
+    debugPrint('Battery Monitor: Pausing history tracking (app backgrounded)');
+    _historyTimer?.cancel();
+  }
+
+  void _resumeHistoryTracking() {
+    debugPrint('Battery Monitor: Resuming history tracking (app foregrounded)');
+    if (_historyTimer == null || !_historyTimer!.isActive) {
+      _startHistoryTracking();
+    }
   }
 
   void _initializeData() {
@@ -107,6 +154,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
     _isLowBattery = _batteryService.isLowBattery;
     _isCharging = _batteryService.isCharging;
     _isScanning = _scanningService.isScanning;
+    _currentLifecycleState = _lifecycleService.currentState;
 
     if (_isScanning) {
       _scanningAnimationController.repeat();
@@ -148,6 +196,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
     _batteryLevelSubscription?.cancel();
     _lowBatterySubscription?.cancel();
     _chargingStateSubscription?.cancel();
+    _lifecycleSubscription?.cancel();
     _historyTimer?.cancel();
     super.dispose();
   }
@@ -267,50 +316,55 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
   Widget _buildBatteryDetails() {
     return Column(
       children: [
-        if (_isLowBattery)
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red[300]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.red[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Low battery mode active. Scanning may be limited.',
-                    style: TextStyle(color: Colors.red[700]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (_isCharging)
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green[300]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.electrical_services,
-                    color: Colors.green[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Device is charging. Scanning restrictions lifted.',
-                    style: TextStyle(color: Colors.green[700]),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        if (_isLowBattery) _buildLowBatteryNotification(),
+        if (_isCharging) _buildChargingNotification(),
       ],
+    );
+  }
+
+  Widget _buildLowBatteryNotification() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.red[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red[700], size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Low battery mode active. Scanning may be limited.',
+              style: TextStyle(color: Colors.red[700]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChargingNotification() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.green[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.electrical_services, color: Colors.green[700], size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Device is charging. Scanning restrictions lifted.',
+              style: TextStyle(color: Colors.green[700]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -377,30 +431,50 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
                 ),
               ],
             ),
-            if (_isScanning && _isLowBattery)
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[300]!),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'App Status:',
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info, color: Colors.orange[700], size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Scanning with low battery may drain power quickly.',
-                        style: TextStyle(color: Colors.orange[700]),
+                Text(
+                  _getAppStatusText(),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: _getAppStatusColor(),
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ],
                 ),
-              ),
+              ],
+            ),
+            if (_isScanning && _isLowBattery) _buildLowBatteryScanningWarning(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLowBatteryScanningWarning() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.orange[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info, color: Colors.orange[700], size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Scanning with low battery may drain power quickly.',
+              style: TextStyle(color: Colors.orange[700]),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -486,29 +560,37 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
 
   Widget _buildBatteryHistoryCard() {
     if (_batteryHistory.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.history, size: 28),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Battery History',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text('No battery history data available yet.'),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyHistoryCard();
     }
 
+    return _buildHistoryCardWithData();
+  }
+
+  Widget _buildEmptyHistoryCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history, size: 28),
+                const SizedBox(width: 12),
+                Text(
+                  'Battery History',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('No battery history data available yet.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryCardWithData() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -645,7 +727,9 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
     // Update animation state
     if (_isScanning && !_scanningAnimationController.isAnimating) {
       _scanningAnimationController.repeat();
-    } else if (!_isScanning && _scanningAnimationController.isAnimating) {
+    }
+
+    if (!_isScanning && _scanningAnimationController.isAnimating) {
       _scanningAnimationController.stop();
     }
 
@@ -694,6 +778,36 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
     if (_batteryLevel > 50) return 'Moderate';
     if (_batteryLevel > 20) return 'High';
     return 'Very High';
+  }
+
+  String _getAppStatusText() {
+    switch (_currentLifecycleState) {
+      case AppLifecycleState.resumed:
+        return 'Active';
+      case AppLifecycleState.paused:
+        return 'Background';
+      case AppLifecycleState.inactive:
+        return 'Inactive';
+      case AppLifecycleState.detached:
+        return 'Detached';
+      case AppLifecycleState.hidden:
+        return 'Hidden';
+    }
+  }
+
+  Color _getAppStatusColor() {
+    switch (_currentLifecycleState) {
+      case AppLifecycleState.resumed:
+        return Colors.green;
+      case AppLifecycleState.paused:
+        return Colors.orange;
+      case AppLifecycleState.inactive:
+        return Colors.yellow[700]!;
+      case AppLifecycleState.detached:
+        return Colors.red;
+      case AppLifecycleState.hidden:
+        return Colors.grey;
+    }
   }
 
   Color _getScanningImpactColor() {

@@ -1,5 +1,6 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import 'app_lifecycle_service.dart';
 import 'battery_service.dart';
 import 'bluetooth_adapter_service.dart';
 import 'bluetooth_scanning_service.dart';
@@ -28,10 +29,13 @@ class AppConfiguration implements AppConfigurationInterface {
     LoggingService().initialize();
     log.info('🚀 Blufie app starting up...');
 
-    // Initialize services
+    // Initialize core services
     await SettingsService().initialize();
     await BatteryService().initialize();
     await BluetoothScanningService().initialize();
+
+    // Initialize app lifecycle monitoring
+    AppLifecycleService().initialize();
 
     _bluetoothAdapter.setLogLevel(LogLevel.verbose);
     log.info('✅ All services initialized successfully');
@@ -43,6 +47,11 @@ class AppConfiguration implements AppConfigurationInterface {
   @override
   BluetoothNavigationObserverInterface createNavigationObserver() {
     return BluetoothAdapterStateObserver(bluetoothAdapter: _bluetoothAdapter);
+  }
+
+  void dispose() {
+    AppLifecycleService().dispose();
+    log.info('🔄 App services disposed');
   }
 }
 

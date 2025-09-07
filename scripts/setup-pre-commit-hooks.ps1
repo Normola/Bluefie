@@ -28,13 +28,15 @@ if (-not (Test-Path ".git\hooks")) {
 # Check if hooks exist
 if (Test-Path ".git\hooks\pre-commit") {
     Write-Host "✓ Pre-commit hook found" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠ Warning: pre-commit hook not found" -ForegroundColor Yellow
 }
 
 if (Test-Path ".git\hooks\pre-commit.bat") {
     Write-Host "✓ Pre-commit hook (Windows batch) found" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠ Warning: pre-commit.bat hook not found" -ForegroundColor Yellow
 }
 
@@ -43,23 +45,39 @@ Write-Host "🧪 Testing the pre-commit hook..." -ForegroundColor Blue
 
 # Check if there are any Dart files to test with
 $dartFiles = Get-ChildItem -Recurse -Filter "*.dart" -File | Select-Object -First 5
-if ($dartFiles.Count -gt 0) {
-    Write-Host "✓ Found $($dartFiles.Count) Dart files for testing" -ForegroundColor Green
+if ($dartFiles.Count -eq 0) {
+    Write-Host "⚠ No Dart files found for testing" -ForegroundColor Yellow
+    Write-Host "🎉 Pre-commit hook setup completed successfully!" -ForegroundColor Green
+    Write-Host "ℹ  The hook will now automatically format your Dart files before each commit." -ForegroundColor Blue
+    Write-Host "ℹ  To bypass the hook, use: git commit --no-verify" -ForegroundColor Blue
+    return
+}
 
-    # Run dart format on a few files to see if it works
-    Write-Host "Running dart format test..." -ForegroundColor Yellow
-    $testFile = $dartFiles[0].FullName
+Write-Host "✓ Found $($dartFiles.Count) Dart files for testing" -ForegroundColor Green
 
-    try {
-        $result = & dart format --output=none $testFile 2>&1
+# Run dart format on a few files to see if it works
+Write-Host "Running dart format test..." -ForegroundColor Yellow
+$testFile = $dartFiles[0].FullName
+
+try {
+    $result = & dart format --output=none $testFile 2>&1
+    if ($LASTEXITCODE -eq 0) {
         Write-Host "✓ Dart format test successful" -ForegroundColor Green
+        if ($result -and $result.ToString().Trim()) {
+            Write-Host "  Output: $result" -ForegroundColor Gray
+        }
     }
-    catch {
-        Write-Host "❌ Dart format test failed: $_" -ForegroundColor Red
+    else {
+        Write-Host "❌ Dart format test failed with exit code: $LASTEXITCODE" -ForegroundColor Red
+        if ($result) {
+            Write-Host "  Error: $result" -ForegroundColor Red
+        }
         exit 1
     }
-} else {
-    Write-Host "⚠ No Dart files found for testing" -ForegroundColor Yellow
+}
+catch {
+    Write-Host "❌ Dart format test failed: $_" -ForegroundColor Red
+    exit 1
 }
 
 Write-Host "🎉 Pre-commit hook setup completed successfully!" -ForegroundColor Green

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import '../services/oui_service.dart';
+import '../services/settings_service.dart';
+
 class ScanResultTile extends StatefulWidget {
   const ScanResultTile({super.key, required this.result, this.onTap});
 
@@ -19,6 +22,10 @@ class _ScanResultTileState extends State<ScanResultTile> {
 
   late StreamSubscription<BluetoothConnectionState>
       _connectionStateSubscription;
+
+  // Service instances - using singleton pattern
+  final SettingsService _settingsService = SettingsService();
+  final OuiService _ouiService = OuiService();
 
   @override
   void initState() {
@@ -63,6 +70,8 @@ class _ScanResultTileState extends State<ScanResultTile> {
   }
 
   Widget _buildTitle(BuildContext context) {
+    final manufacturer = _getManufacturerInfo();
+
     if (widget.result.device.platformName.isNotEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,12 +83,45 @@ class _ScanResultTileState extends State<ScanResultTile> {
           Text(
             widget.result.device.remoteId.str,
             style: Theme.of(context).textTheme.bodySmall,
-          )
+          ),
+          if (manufacturer != null)
+            Text(
+              manufacturer,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.blue,
+                    fontStyle: FontStyle.italic,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       );
     }
 
-    return Text(widget.result.device.remoteId.str);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.result.device.remoteId.str),
+        if (manufacturer != null)
+          Text(
+            manufacturer,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.blue,
+                  fontStyle: FontStyle.italic,
+                ),
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
+    );
+  }
+
+  String? _getManufacturerInfo() {
+    if (!_settingsService.currentSettings.ouiDatabaseEnabled ||
+        !_ouiService.isLoaded) {
+      return null;
+    }
+
+    final macAddress = widget.result.device.remoteId.str;
+    return _ouiService.getManufacturer(macAddress);
   }
 
   Widget _buildConnectButton(BuildContext context) {

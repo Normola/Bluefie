@@ -109,6 +109,17 @@ class SettingsService {
     await updateSettings(newSettings);
   }
 
+  Future<void> updateOuiDatabaseEnabled(bool enabled) async {
+    final newSettings = _currentSettings.copyWith(ouiDatabaseEnabled: enabled);
+    await updateSettings(newSettings);
+  }
+
+  Future<void> updateOuiDatabaseLastUpdated(DateTime? lastUpdated) async {
+    final newSettings =
+        _currentSettings.copyWith(ouiDatabaseLastUpdated: lastUpdated);
+    await updateSettings(newSettings);
+  }
+
   Future<void> resetToDefaults() async {
     await updateSettings(const AppSettings());
   }

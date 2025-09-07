@@ -261,7 +261,7 @@ class _DeviceLocationMapScreenState extends State<DeviceLocationMapScreen> {
     );
   }
 
-  void _centerOnCurrentLocation() async {
+  Future<void> _centerOnCurrentLocation() async {
     final currentPosition = await _locationService.getCurrentLocation();
     if (currentPosition == null || !mounted) return;
 

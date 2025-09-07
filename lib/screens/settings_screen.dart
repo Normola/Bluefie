@@ -7,6 +7,7 @@ import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
+import '../services/oui_service.dart';
 import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,20 +18,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final SettingsService _settingsService = SettingsService();
-  final BatteryService _batteryService = BatteryService();
-  final BluetoothScanningService _scanningService = BluetoothScanningService();
-  final DataExportService _exportService = DataExportService();
-  final AppLifecycleService _lifecycleService = AppLifecycleService();
+  // Service instances - using singleton pattern
+  final OuiService _ouiService = OuiService();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
   AppLifecycleState _currentLifecycleState = AppLifecycleState.resumed;
+  bool _isDownloadingOui = false;
+  double _ouiDownloadProgress = 0.0;
+  DateTime? _ouiLastUpdated;
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
+  StreamSubscription<double>? _ouiDownloadSubscription;
 
   @override
   void initState() {
@@ -39,15 +41,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _setupStreams();
   }
 
-  void _initializeData() {
-    _settings = _settingsService.currentSettings;
-    _currentBatteryLevel = _batteryService.currentBatteryLevel;
-    _batteryStatusText = _batteryService.getBatteryStatusText();
-    _currentLifecycleState = _lifecycleService.currentState;
+  Future<void> _initializeData() async {
+    final settingsService = SettingsService();
+    final batteryService = BatteryService();
+    final lifecycleService = AppLifecycleService();
+
+    _settings = settingsService.currentSettings;
+    _currentBatteryLevel = batteryService.currentBatteryLevel;
+    _batteryStatusText = batteryService.getBatteryStatusText();
+    _currentLifecycleState = lifecycleService.currentState;
+    await _initializeOuiService();
+  }
+
+  Future<void> _initializeOuiService() async {
+    await _ouiService.initialize();
+    final lastUpdated = await _ouiService.getLastUpdateTime();
+    if (mounted) {
+      setState(() {
+        _ouiLastUpdated = lastUpdated;
+      });
+    }
   }
 
   void _setupStreams() {
-    _settingsSubscription = _settingsService.settingsStream.listen((settings) {
+    final settingsService = SettingsService();
+    final batteryService = BatteryService();
+    final lifecycleService = AppLifecycleService();
+
+    _settingsSubscription = settingsService.settingsStream.listen((settings) {
       if (!mounted) return;
 
       setState(() {
@@ -56,20 +77,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     _batteryLevelSubscription =
-        _batteryService.batteryLevelStream.listen((level) {
+        batteryService.batteryLevelStream.listen((level) {
       if (!mounted) return;
 
       setState(() {
         _currentBatteryLevel = level;
-        _batteryStatusText = _batteryService.getBatteryStatusText();
+        _batteryStatusText = batteryService.getBatteryStatusText();
       });
     });
 
-    _lifecycleSubscription = _lifecycleService.lifecycleStream.listen((state) {
+    _lifecycleSubscription = lifecycleService.lifecycleStream.listen((state) {
       if (!mounted) return;
 
       setState(() {
         _currentLifecycleState = state;
+      });
+    });
+
+    _ouiDownloadSubscription =
+        _ouiService.downloadProgressStream.listen((progress) {
+      if (!mounted) return;
+
+      setState(() {
+        _ouiDownloadProgress = progress;
+        _isDownloadingOui = progress < 1.0 && progress > 0.0;
       });
     });
   }
@@ -79,6 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _settingsSubscription?.cancel();
     _batteryLevelSubscription?.cancel();
     _lifecycleSubscription?.cancel();
+    _ouiDownloadSubscription?.cancel();
     super.dispose();
   }
 
@@ -90,8 +122,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _initializeData();
+            onPressed: () async {
+              await _initializeData();
               setState(() {});
             },
           ),
@@ -122,6 +154,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildBatteryOptimizationCard(),
           const SizedBox(height: 16),
           _buildAdvancedSettingsCard(),
+          const SizedBox(height: 16),
+          _buildOuiDatabaseCard(),
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
@@ -200,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildBatteryStatusCard() {
+    final batteryService = BatteryService();
     final Color batteryColor = _currentBatteryLevel > 50
         ? Colors.green
         : _currentBatteryLevel > 20
@@ -235,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    if (_batteryService.isLowBattery)
+                    if (batteryService.isLowBattery)
                       Text(
                         'Low battery mode active',
                         style: TextStyle(color: Colors.red[600]),
@@ -269,13 +304,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Manual scanning only'),
               value: _settings.autoScanningEnabled,
               onChanged: (value) async {
-                await _settingsService.updateAutoScanning(value);
+                final settingsService = SettingsService();
+                final scanningService = BluetoothScanningService();
+
+                await settingsService.updateAutoScanning(value);
                 if (value) {
-                  _scanningService.startContinuousScanning();
+                  scanningService.startContinuousScanning();
                   return;
                 }
 
-                _scanningService.stopContinuousScanning();
+                scanningService.stopContinuousScanning();
               },
             ),
             const Divider(),
@@ -286,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Manual control only'),
               value: _settings.autoScanWhenPluggedIn,
               onChanged: (value) async {
-                await _settingsService.updateAutoScanWhenPluggedIn(value);
+                await SettingsService().updateAutoScanWhenPluggedIn(value);
               },
             ),
             const Divider(),
@@ -302,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Record GPS coordinates with discoveries'),
               value: _settings.locationTrackingEnabled,
               onChanged: (value) {
-                _settingsService.updateLocationTracking(value);
+                SettingsService().updateLocationTracking(value);
               },
             ),
           ],
@@ -330,7 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Continue scanning regardless of battery'),
               value: _settings.batteryOptimizationEnabled,
               onChanged: (value) {
-                _settingsService.updateBatteryOptimization(value, null);
+                SettingsService().updateBatteryOptimization(value, null);
               },
             ),
             if (_settings.batteryOptimizationEnabled) ...[
@@ -372,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Enable detailed debug output'),
               value: _settings.verboseLoggingEnabled,
               onChanged: (value) {
-                _settingsService.updateVerboseLogging(value);
+                SettingsService().updateVerboseLogging(value);
               },
             ),
             const Divider(),
@@ -381,11 +419,230 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Show scanning status notifications'),
               value: _settings.showNotifications,
               onChanged: (value) {
-                _settingsService.updateNotifications(value);
+                SettingsService().updateNotifications(value);
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOuiDatabaseCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Device Manufacturer Database',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Show Manufacturer Names'),
+              subtitle:
+                  const Text('Display device manufacturer from MAC address'),
+              value: _settings.ouiDatabaseEnabled,
+              onChanged: (value) {
+                SettingsService().updateOuiDatabaseEnabled(value);
+              },
+            ),
+            if (_settings.ouiDatabaseEnabled) ...[
+              const Divider(),
+              _buildOuiDatabaseStatus(),
+              const SizedBox(height: 12),
+              _buildOuiDatabaseActions(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOuiDatabaseStatus() {
+    if (_isDownloadingOui) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                  'Downloading database... ${(_ouiDownloadProgress * 100).toInt()}%'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: _ouiDownloadProgress),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              _ouiService.isLoaded ? Icons.check_circle : Icons.info,
+              color: _ouiService.isLoaded ? Colors.green : Colors.orange,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _ouiService.isLoaded
+                    ? 'Database loaded (${_ouiService.databaseSize} manufacturers)'
+                    : 'Database not downloaded',
+              ),
+            ),
+          ],
+        ),
+        if (_ouiLastUpdated != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 32, top: 4),
+            child: Row(
+              children: [
+                Text(
+                  'Last updated: ${_formatDate(_ouiLastUpdated!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildOuiDatabaseActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isDownloadingOui ? null : _downloadOuiDatabase,
+            icon: const Icon(Icons.download),
+            label: Text(
+                _ouiService.isLoaded ? 'Update Database' : 'Download Database'),
+          ),
+        ),
+        if (_ouiService.isLoaded) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isDownloadingOui ? null : _deleteOuiDatabase,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<void> _downloadOuiDatabase() async {
+    final settingsService = SettingsService();
+
+    setState(() {
+      _isDownloadingOui = true;
+    });
+
+    final success = await _ouiService.downloadDatabase(forceUpdate: true);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isDownloadingOui = false;
+    });
+
+    final lastUpdated = await _ouiService.getLastUpdateTime();
+    setState(() {
+      _ouiLastUpdated = lastUpdated;
+    });
+
+    if (success) {
+      await settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
+      _showDownloadSuccessMessage();
+      return;
+    }
+
+    _showDownloadFailureMessage();
+  }
+
+  void _showDownloadSuccessMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('OUI database downloaded successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showDownloadFailureMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to download OUI database'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _deleteOuiDatabase() async {
+    final settingsService = SettingsService();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Database'),
+        content: const Text(
+            'Are you sure you want to delete the manufacturer database?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    final success = await _ouiService.deleteDatabase();
+
+    setState(() {
+      _ouiLastUpdated = null;
+    });
+
+    await settingsService.updateOuiDatabaseLastUpdated(null);
+    _showDeleteResultMessage(success);
+  }
+
+  void _showDeleteResultMessage(bool success) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Database deleted successfully'
+            : 'Failed to delete database'),
+        backgroundColor: success ? Colors.green : Colors.red,
       ),
     );
   }
@@ -462,7 +719,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateScanInterval(currentInterval);
+                SettingsService().updateScanInterval(currentInterval);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -510,8 +767,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateBatteryOptimization(
-                    true, currentThreshold);
+                SettingsService()
+                    .updateBatteryOptimization(true, currentThreshold);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -563,7 +820,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateDataRetention(currentRetention);
+                SettingsService().updateDataRetention(currentRetention);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -588,7 +845,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () {
-              _settingsService.resetToDefaults();
+              SettingsService().resetToDefaults();
               Navigator.of(context).pop();
             },
             child: const Text('Reset'),
@@ -634,88 +891,104 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _performDataExport() async {
+    final exportService = DataExportService();
+
     try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Exporting data...'),
-            ],
-          ),
-        ),
-      );
+      _showExportLoadingDialog();
 
-      // Perform the export
-      final String? filePath = await _exportService.exportAllDataToJson();
+      final String? filePath = await exportService.exportAllDataToJson();
 
-      // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
       if (filePath == null) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Export failed')),
-        );
+        _showExportFailedMessage();
         return;
       }
 
       if (!mounted) return;
 
-      // Show success dialog with sharing option
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Export Successful'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Data exported successfully!'),
-              const SizedBox(height: 8),
-              Text('File: ${filePath.split('/').last}'),
-              const SizedBox(height: 8),
-              Text('Location: $filePath'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await _exportService.shareExportedFile(filePath);
-                } catch (e) {
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('Error sharing file: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Share'),
-            ),
+      _showExportSuccessDialog(filePath, exportService);
+    } catch (e) {
+      _handleExportError(e);
+    }
+  }
+
+  void _showExportLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Exporting data...'),
           ],
         ),
-      );
+      ),
+    );
+  }
+
+  void _showExportFailedMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export failed')),
+    );
+  }
+
+  void _showExportSuccessDialog(
+      String filePath, DataExportService exportService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Successful'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Data exported successfully!'),
+            const SizedBox(height: 8),
+            Text('File: ${filePath.split('/').last}'),
+            const SizedBox(height: 8),
+            Text('Location: $filePath'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () => _shareExportedFile(filePath, exportService),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareExportedFile(
+      String filePath, DataExportService exportService) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await exportService.shareExportedFile(filePath);
     } catch (e) {
-      // Close loading dialog if still open
-      if (mounted) Navigator.of(context).pop();
-
-      // Show error message
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export error: $e')),
-      );
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error sharing file: $e')),
+        );
+      }
     }
+  }
+
+  void _handleExportError(Object e) {
+    if (mounted) Navigator.of(context).pop();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Export error: $e')),
+    );
   }
 }

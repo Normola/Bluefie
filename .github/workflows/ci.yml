@@ -171,13 +171,13 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             // Get release APK size
             const releasePath = 'build/app/outputs/flutter-apk/app-release.apk';
             const releaseStats = fs.statSync(releasePath);
             const releaseSizeInMB = (releaseStats.size / (1024 * 1024)).toFixed(2);
-            
-            // Get profile APK size  
+
+            // Get profile APK size
             const profilePath = 'build/app/outputs/flutter-apk/app-profile.apk';
             const profileStats = fs.statSync(profilePath);
             const profileSizeInMB = (profileStats.size / (1024 * 1024)).toFixed(2);
@@ -188,7 +188,7 @@ jobs:
             **Profile APK Size**: ${profileSizeInMB} MB (includes debug symbols)
 
             Build completed successfully! The release APK (what users download) is ${releaseSizeInMB} MB.
-            
+
             _Profile APKs are larger because they include debugging features and symbols for performance testing._`;
 
             github.rest.issues.createComment({

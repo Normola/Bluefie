@@ -18,6 +18,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  // Service instances - using singleton pattern
+  final OuiService _ouiService = OuiService();
+
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
@@ -51,9 +54,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _initializeOuiService() async {
-    final ouiService = OuiService();
-    await ouiService.initialize();
-    final lastUpdated = await ouiService.getLastUpdateTime();
+    await _ouiService.initialize();
+    final lastUpdated = await _ouiService.getLastUpdateTime();
     if (mounted) {
       setState(() {
         _ouiLastUpdated = lastUpdated;
@@ -65,7 +67,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settingsService = SettingsService();
     final batteryService = BatteryService();
     final lifecycleService = AppLifecycleService();
-    final ouiService = OuiService();
 
     _settingsSubscription = settingsService.settingsStream.listen((settings) {
       if (!mounted) return;
@@ -94,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     _ouiDownloadSubscription =
-        ouiService.downloadProgressStream.listen((progress) {
+        _ouiService.downloadProgressStream.listen((progress) {
       if (!mounted) return;
 
       setState(() {
@@ -461,8 +462,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildOuiDatabaseStatus() {
-    final ouiService = OuiService();
-
     if (_isDownloadingOui) {
       return Column(
         children: [
@@ -489,15 +488,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           children: [
             Icon(
-              ouiService.isLoaded ? Icons.check_circle : Icons.info,
-              color: ouiService.isLoaded ? Colors.green : Colors.orange,
+              _ouiService.isLoaded ? Icons.check_circle : Icons.info,
+              color: _ouiService.isLoaded ? Colors.green : Colors.orange,
               size: 20,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                ouiService.isLoaded
-                    ? 'Database loaded (${ouiService.databaseSize} manufacturers)'
+                _ouiService.isLoaded
+                    ? 'Database loaded (${_ouiService.databaseSize} manufacturers)'
                     : 'Database not downloaded',
               ),
             ),
@@ -520,8 +519,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildOuiDatabaseActions() {
-    final ouiService = OuiService();
-
     return Row(
       children: [
         Expanded(
@@ -529,10 +526,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: _isDownloadingOui ? null : _downloadOuiDatabase,
             icon: const Icon(Icons.download),
             label: Text(
-                ouiService.isLoaded ? 'Update Database' : 'Download Database'),
+                _ouiService.isLoaded ? 'Update Database' : 'Download Database'),
           ),
         ),
-        if (ouiService.isLoaded) ...[
+        if (_ouiService.isLoaded) ...[
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: _isDownloadingOui ? null : _deleteOuiDatabase,
@@ -552,21 +549,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _downloadOuiDatabase() async {
-    final ouiService = OuiService();
     final settingsService = SettingsService();
 
     setState(() {
       _isDownloadingOui = true;
     });
 
-    final success = await ouiService.downloadDatabase(forceUpdate: true);
+    final success = await _ouiService.downloadDatabase(forceUpdate: true);
 
     if (mounted) {
       setState(() {
         _isDownloadingOui = false;
       });
 
-      final lastUpdated = await ouiService.getLastUpdateTime();
+      final lastUpdated = await _ouiService.getLastUpdateTime();
       setState(() {
         _ouiLastUpdated = lastUpdated;
       });
@@ -595,7 +591,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _deleteOuiDatabase() async {
-    final ouiService = OuiService();
     final settingsService = SettingsService();
 
     final confirm = await showDialog<bool>(
@@ -618,7 +613,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirm == true) {
-      final success = await ouiService.deleteDatabase();
+      final success = await _ouiService.deleteDatabase();
       if (mounted) {
         setState(() {
           _ouiLastUpdated = null;

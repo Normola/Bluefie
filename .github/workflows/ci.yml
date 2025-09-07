@@ -143,18 +143,21 @@ jobs:
       - name: Build profile APK for validation
         run: flutter build apk --profile
 
-      - name: Validate APK size
+      - name: Validate APK size (Profile/Release only)
         run: |
           APK_SIZE=$(stat -c%s "build/app/outputs/flutter-apk/app-profile.apk")
           APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc)
-          echo "APK Size: ${APK_SIZE_MB} MB"
+          echo "Profile APK Size: ${APK_SIZE_MB} MB"
 
-          # Fail if APK is larger than 50MB (adjust as needed)
+          # Only validate size for profile/release builds (not debug)
+          # Debug APKs are larger due to debug symbols and are not size-critical
           if (( $(echo "$APK_SIZE_MB > 50" | bc -l) )); then
-            echo "❌ APK size ($APK_SIZE_MB MB) exceeds 50MB limit"
+            echo "❌ Profile APK size ($APK_SIZE_MB MB) exceeds 50MB limit"
+            echo "Note: Debug APKs are not subject to size validation"
             exit 1
           else
-            echo "✅ APK size is within acceptable limits"
+            echo "✅ Profile APK size is within acceptable limits"
+            echo "Note: Debug APKs are not subject to size validation"
           fi
 
       - name: Comment APK size on PR
@@ -170,6 +173,8 @@ jobs:
             const comment = `## 📱 APK Build Report
 
             **Profile APK Size**: ${fileSizeInMB} MB
+
+            ℹ️ *Note: Debug APKs are larger and not subject to size validation*
 
             Build completed successfully! ✅`;
 

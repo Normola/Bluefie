@@ -90,7 +90,7 @@ class AppLifecycleService with WidgetsBindingObserver {
 
     final settings = _settingsService.currentSettings;
 
-    if (!_scanningService.isScanning) return;
+    if (!_wasAutoScanningBeforeBackground) return;
 
     if (settings.batteryOptimizationEnabled) {
       debugPrint(

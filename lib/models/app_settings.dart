@@ -1,6 +1,7 @@
 class AppSettings {
   final bool autoScanningEnabled;
   final bool batteryOptimizationEnabled;
+  final bool backgroundScanningEnabled;
   final int batteryThresholdPercent;
   final int scanIntervalSeconds;
   final int dataRetentionDays;
@@ -13,7 +14,9 @@ class AppSettings {
 
   const AppSettings({
     this.autoScanningEnabled = false,
-    this.batteryOptimizationEnabled = true,
+    this.batteryOptimizationEnabled =
+        false, // Changed to false for background scanning
+    this.backgroundScanningEnabled = true,
     this.batteryThresholdPercent = 20,
     this.scanIntervalSeconds = 30,
     this.dataRetentionDays = 30,
@@ -28,6 +31,7 @@ class AppSettings {
   AppSettings copyWith({
     bool? autoScanningEnabled,
     bool? batteryOptimizationEnabled,
+    bool? backgroundScanningEnabled,
     int? batteryThresholdPercent,
     int? scanIntervalSeconds,
     int? dataRetentionDays,
@@ -42,6 +46,8 @@ class AppSettings {
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
       batteryOptimizationEnabled:
           batteryOptimizationEnabled ?? this.batteryOptimizationEnabled,
+      backgroundScanningEnabled:
+          backgroundScanningEnabled ?? this.backgroundScanningEnabled,
       batteryThresholdPercent:
           batteryThresholdPercent ?? this.batteryThresholdPercent,
       scanIntervalSeconds: scanIntervalSeconds ?? this.scanIntervalSeconds,
@@ -63,6 +69,7 @@ class AppSettings {
     return {
       'autoScanningEnabled': autoScanningEnabled,
       'batteryOptimizationEnabled': batteryOptimizationEnabled,
+      'backgroundScanningEnabled': backgroundScanningEnabled,
       'batteryThresholdPercent': batteryThresholdPercent,
       'scanIntervalSeconds': scanIntervalSeconds,
       'dataRetentionDays': dataRetentionDays,
@@ -78,7 +85,9 @@ class AppSettings {
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
       autoScanningEnabled: json['autoScanningEnabled'] ?? false,
-      batteryOptimizationEnabled: json['batteryOptimizationEnabled'] ?? true,
+      batteryOptimizationEnabled:
+          json['batteryOptimizationEnabled'] ?? false, // Changed default
+      backgroundScanningEnabled: json['backgroundScanningEnabled'] ?? true,
       batteryThresholdPercent: json['batteryThresholdPercent'] ?? 20,
       scanIntervalSeconds: json['scanIntervalSeconds'] ?? 30,
       dataRetentionDays: json['dataRetentionDays'] ?? 30,
@@ -88,16 +97,29 @@ class AppSettings {
       autoScanWhenPluggedIn: json['autoScanWhenPluggedIn'] ?? false,
       ouiDatabaseEnabled: json['ouiDatabaseEnabled'] ?? false,
       ouiDatabaseLastUpdated: json['ouiDatabaseLastUpdated'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(json['ouiDatabaseLastUpdated'])
+          ? (json['ouiDatabaseLastUpdated'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(
+                  json['ouiDatabaseLastUpdated'])
+              : DateTime.parse(json['ouiDatabaseLastUpdated']))
           : null,
     );
   }
 
-  Duration get scanInterval => Duration(seconds: scanIntervalSeconds);
-  Duration get dataRetentionDuration => Duration(days: dataRetentionDays);
-
   @override
   String toString() {
-    return 'AppSettings{autoScanningEnabled: $autoScanningEnabled, batteryThreshold: $batteryThresholdPercent%, scanInterval: ${scanIntervalSeconds}s}';
+    return 'AppSettings('
+        'autoScanningEnabled: $autoScanningEnabled, '
+        'batteryOptimizationEnabled: $batteryOptimizationEnabled, '
+        'backgroundScanningEnabled: $backgroundScanningEnabled, '
+        'batteryThresholdPercent: $batteryThresholdPercent, '
+        'scanIntervalSeconds: $scanIntervalSeconds, '
+        'dataRetentionDays: $dataRetentionDays, '
+        'locationTrackingEnabled: $locationTrackingEnabled, '
+        'verboseLoggingEnabled: $verboseLoggingEnabled, '
+        'showNotifications: $showNotifications, '
+        'autoScanWhenPluggedIn: $autoScanWhenPluggedIn, '
+        'ouiDatabaseEnabled: $ouiDatabaseEnabled, '
+        'ouiDatabaseLastUpdated: $ouiDatabaseLastUpdated'
+        ')';
   }
 }

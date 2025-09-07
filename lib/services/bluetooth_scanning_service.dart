@@ -121,6 +121,10 @@ class BluetoothScanningService {
       _startContinuousScanTimer();
 
       _isServiceRunning = true;
+
+      // Load initial recent devices to populate the stream
+      await _updateStreams();
+
       log.info('Continuous Bluetooth scanning started');
       return true;
     } catch (e) {

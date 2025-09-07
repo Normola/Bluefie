@@ -11,7 +11,8 @@ void main() {
         expect(settings.autoScanWhenPluggedIn, false);
         expect(settings.scanIntervalSeconds, 30);
         expect(settings.locationTrackingEnabled, true);
-        expect(settings.batteryOptimizationEnabled, true);
+        expect(settings.batteryOptimizationEnabled, false);
+        expect(settings.backgroundScanningEnabled, true);
         expect(settings.batteryThresholdPercent, 20);
         expect(settings.verboseLoggingEnabled, false);
         expect(settings.showNotifications, true);
@@ -25,7 +26,8 @@ void main() {
           batteryThresholdPercent: 15,
           verboseLoggingEnabled: true,
           autoScanWhenPluggedIn: true,
-          batteryOptimizationEnabled: false,
+          batteryOptimizationEnabled: true,
+          backgroundScanningEnabled: false,
           dataRetentionDays: 60,
           locationTrackingEnabled: false,
           showNotifications: false,
@@ -36,7 +38,8 @@ void main() {
         expect(settings.batteryThresholdPercent, 15);
         expect(settings.verboseLoggingEnabled, true);
         expect(settings.autoScanWhenPluggedIn, true);
-        expect(settings.batteryOptimizationEnabled, false);
+        expect(settings.batteryOptimizationEnabled, true);
+        expect(settings.backgroundScanningEnabled, false);
         expect(settings.dataRetentionDays, 60);
         expect(settings.locationTrackingEnabled, false);
         expect(settings.showNotifications, false);
@@ -96,7 +99,8 @@ void main() {
 
         final updatedSettings = originalSettings.copyWith(
           autoScanningEnabled: true,
-          batteryOptimizationEnabled: false,
+          batteryOptimizationEnabled: true,
+          backgroundScanningEnabled: false,
           batteryThresholdPercent: 15,
           scanIntervalSeconds: 120,
           dataRetentionDays: 90,
@@ -107,7 +111,8 @@ void main() {
         );
 
         expect(updatedSettings.autoScanningEnabled, true);
-        expect(updatedSettings.batteryOptimizationEnabled, false);
+        expect(updatedSettings.batteryOptimizationEnabled, true);
+        expect(updatedSettings.backgroundScanningEnabled, false);
         expect(updatedSettings.batteryThresholdPercent, 15);
         expect(updatedSettings.scanIntervalSeconds, 120);
         expect(updatedSettings.dataRetentionDays, 90);
@@ -140,7 +145,6 @@ void main() {
           autoScanningEnabled: true,
           scanIntervalSeconds: 45,
           batteryThresholdPercent: 25,
-          batteryOptimizationEnabled: false,
           dataRetentionDays: 60,
           locationTrackingEnabled: false,
           verboseLoggingEnabled: true,
@@ -166,7 +170,8 @@ void main() {
         final json = settings.toJson();
 
         expect(json['autoScanningEnabled'], false);
-        expect(json['batteryOptimizationEnabled'], true);
+        expect(json['batteryOptimizationEnabled'], false);
+        expect(json['backgroundScanningEnabled'], true);
         expect(json['batteryThresholdPercent'], 20);
         expect(json['scanIntervalSeconds'], 30);
         expect(json['dataRetentionDays'], 30);
@@ -183,6 +188,7 @@ void main() {
         final expectedKeys = [
           'autoScanningEnabled',
           'batteryOptimizationEnabled',
+          'backgroundScanningEnabled',
           'batteryThresholdPercent',
           'scanIntervalSeconds',
           'dataRetentionDays',
@@ -238,7 +244,8 @@ void main() {
         expect(settings.autoScanningEnabled, true);
         expect(settings.scanIntervalSeconds, 90);
         expect(settings.locationTrackingEnabled, true); // default
-        expect(settings.batteryOptimizationEnabled, true); // default
+        expect(settings.batteryOptimizationEnabled, false); // default
+        expect(settings.backgroundScanningEnabled, true); // default
         expect(settings.verboseLoggingEnabled, false); // default
         expect(settings.batteryThresholdPercent, 20); // default
         expect(settings.dataRetentionDays, 30); // default
@@ -251,7 +258,8 @@ void main() {
         final settings = AppSettings.fromJson(json);
 
         expect(settings.autoScanningEnabled, false);
-        expect(settings.batteryOptimizationEnabled, true);
+        expect(settings.batteryOptimizationEnabled, false);
+        expect(settings.backgroundScanningEnabled, true);
         expect(settings.batteryThresholdPercent, 20);
         expect(settings.scanIntervalSeconds, 30);
         expect(settings.dataRetentionDays, 30);
@@ -283,7 +291,6 @@ void main() {
           scanIntervalSeconds: 120,
           batteryThresholdPercent: 10,
           verboseLoggingEnabled: true,
-          batteryOptimizationEnabled: false,
           dataRetentionDays: 45,
           locationTrackingEnabled: false,
           showNotifications: false,
@@ -314,44 +321,6 @@ void main() {
       });
     });
 
-    group('Duration Helper Properties Tests', () {
-      test('scanInterval should return correct Duration', () {
-        const settings = AppSettings(scanIntervalSeconds: 45);
-        final duration = settings.scanInterval;
-
-        expect(duration, const Duration(seconds: 45));
-        expect(duration.inSeconds, 45);
-      });
-
-      test('dataRetentionDuration should return correct Duration', () {
-        const settings = AppSettings(dataRetentionDays: 60);
-        final duration = settings.dataRetentionDuration;
-
-        expect(duration, const Duration(days: 60));
-        expect(duration.inDays, 60);
-      });
-
-      test('should handle zero values in duration properties', () {
-        const settings = AppSettings(
-          scanIntervalSeconds: 0,
-          dataRetentionDays: 0,
-        );
-
-        expect(settings.scanInterval, Duration.zero);
-        expect(settings.dataRetentionDuration, Duration.zero);
-      });
-
-      test('should handle large values in duration properties', () {
-        const settings = AppSettings(
-          scanIntervalSeconds: 3600, // 1 hour
-          dataRetentionDays: 365, // 1 year
-        );
-
-        expect(settings.scanInterval.inHours, 1);
-        expect(settings.dataRetentionDuration.inDays, 365);
-      });
-    });
-
     group('toString Tests', () {
       test('should return formatted string with key values', () {
         const settings = AppSettings(
@@ -364,8 +333,8 @@ void main() {
 
         expect(stringRepresentation, contains('AppSettings'));
         expect(stringRepresentation, contains('autoScanningEnabled: true'));
-        expect(stringRepresentation, contains('batteryThreshold: 25%'));
-        expect(stringRepresentation, contains('scanInterval: 60s'));
+        expect(stringRepresentation, contains('batteryThresholdPercent: 25'));
+        expect(stringRepresentation, contains('scanIntervalSeconds: 60'));
       });
 
       test('should handle default values in toString', () {
@@ -373,8 +342,8 @@ void main() {
         final stringRepresentation = settings.toString();
 
         expect(stringRepresentation, contains('autoScanningEnabled: false'));
-        expect(stringRepresentation, contains('batteryThreshold: 20%'));
-        expect(stringRepresentation, contains('scanInterval: 30s'));
+        expect(stringRepresentation, contains('batteryThresholdPercent: 20'));
+        expect(stringRepresentation, contains('scanIntervalSeconds: 30'));
       });
 
       test('should be useful for debugging', () {
@@ -386,8 +355,8 @@ void main() {
         final stringRepresentation = settings.toString();
 
         // Should contain the class name and key properties for debugging
-        expect(stringRepresentation.startsWith('AppSettings{'), true);
-        expect(stringRepresentation.endsWith('}'), true);
+        expect(stringRepresentation.startsWith('AppSettings('), true);
+        expect(stringRepresentation.endsWith(')'), true);
       });
     });
 
@@ -402,7 +371,6 @@ void main() {
         expect(settings.batteryThresholdPercent, 100);
         expect(settings.scanIntervalSeconds, 86400);
         expect(settings.dataRetentionDays, 9999);
-        expect(settings.scanInterval.inHours, 24);
       });
 
       test('should handle minimum values', () {
@@ -438,6 +406,7 @@ void main() {
 
         expect(settings.autoScanningEnabled, isA<bool>());
         expect(settings.batteryOptimizationEnabled, isA<bool>());
+        expect(settings.backgroundScanningEnabled, isA<bool>());
         expect(settings.batteryThresholdPercent, isA<int>());
         expect(settings.scanIntervalSeconds, isA<int>());
         expect(settings.dataRetentionDays, isA<int>());
@@ -445,13 +414,6 @@ void main() {
         expect(settings.verboseLoggingEnabled, isA<bool>());
         expect(settings.showNotifications, isA<bool>());
         expect(settings.autoScanWhenPluggedIn, isA<bool>());
-      });
-
-      test('duration properties should return Duration objects', () {
-        const settings = AppSettings();
-
-        expect(settings.scanInterval, isA<Duration>());
-        expect(settings.dataRetentionDuration, isA<Duration>());
       });
 
       test('toJson should return Map<String, dynamic>', () {
@@ -560,7 +522,8 @@ void main() {
           'autoScanWhenPluggedIn': false,
           'scanIntervalSeconds': 30,
           'locationTrackingEnabled': true,
-          'batteryOptimizationEnabled': true,
+          'batteryOptimizationEnabled': false,
+          'backgroundScanningEnabled': true,
           'batteryThresholdPercent': 20,
           'verboseLoggingEnabled': false,
           'showNotifications': true,

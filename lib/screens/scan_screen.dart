@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import '../models/bluetooth_device_record.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/location_service.dart';
@@ -26,6 +27,7 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   List<BluetoothDevice> _systemDevices = [];
   List<ScanResult> _scanResults = [];
+  List<BluetoothDeviceRecord> _recentDevices = [];
   bool _isScanning = false;
   bool _continuousScanning = false;
   int _storedDeviceCount = 0;
@@ -36,6 +38,7 @@ class _ScanScreenState extends State<ScanScreen> {
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
   StreamSubscription<int>? _deviceCountSubscription;
+  StreamSubscription<List<BluetoothDeviceRecord>>? _recentDevicesSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<bool>? _lowBatterySubscription;
   StreamSubscription<bool>? _chargingStateSubscription;
@@ -72,6 +75,16 @@ class _ScanScreenState extends State<ScanScreen> {
 
       setState(() {
         _storedDeviceCount = count;
+      });
+    });
+
+    // Listen to recent devices from background scanning
+    _recentDevicesSubscription =
+        _scanningService.recentDevicesStream.listen((devices) {
+      if (!mounted) return;
+
+      setState(() {
+        _recentDevices = devices;
       });
     });
 
@@ -140,6 +153,7 @@ class _ScanScreenState extends State<ScanScreen> {
     _scanResultsSubscription.cancel();
     _isScanningSubscription.cancel();
     _deviceCountSubscription?.cancel();
+    _recentDevicesSubscription?.cancel();
     _batteryLevelSubscription?.cancel();
     _lowBatterySubscription?.cancel();
     _chargingStateSubscription?.cancel();
@@ -231,15 +245,21 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Widget buildScanButton(BuildContext context) {
     if (FlutterBluePlus.isScanningNow) {
-      return FloatingActionButton(
+      return FloatingActionButton.extended(
         onPressed: onStopPressed,
         backgroundColor: Colors.red,
-        child: const Icon(Icons.stop),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.stop),
+        label: const Text('STOP'),
       );
     }
 
-    return FloatingActionButton(
-        onPressed: onScanPressed, child: const Text('SCAN'));
+    return FloatingActionButton.extended(
+        onPressed: onScanPressed,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.radar),
+        label: const Text('SCAN'));
   }
 
   Widget _buildStatsCard() {
@@ -249,6 +269,51 @@ class _ScanScreenState extends State<ScanScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Scanning status banner
+            if (_isScanning || _continuousScanning)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12.0),
+                margin: const EdgeInsets.only(bottom: 16.0),
+                decoration: BoxDecoration(
+                  color: (_isScanning ? Colors.blue : Colors.green)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: _isScanning ? Colors.blue : Colors.green,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _isScanning ? Colors.blue : Colors.green,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        _isScanning
+                            ? '🔍 Active Scan in Progress'
+                            : '🔄 Continuous Scanning Active',
+                        style: TextStyle(
+                          color: _isScanning ? Colors.blue : Colors.green,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -267,15 +332,46 @@ class _ScanScreenState extends State<ScanScreen> {
                 ),
                 Column(
                   children: [
-                    Text(
-                      _scanResults.length.toString(),
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          // Show combined count: foreground scan results + recent background devices
+                          (_scanResults.length + _recentDevices.length)
+                              .toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.green,
                               ),
+                        ),
+                        // Add scanning icon next to current scan count
+                        if (_isScanning) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.radar,
+                            color: Colors.blue,
+                            size: 16,
+                          ),
+                        ],
+                        // Add background scan indicator
+                        if (_continuousScanning && !_isScanning) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.refresh,
+                            color: Colors.green,
+                            size: 16,
+                          ),
+                        ],
+                      ],
                     ),
-                    const Text('Current Scan'),
+                    Text(_isScanning
+                        ? 'Active Scan'
+                        : _continuousScanning
+                            ? 'Background Scan'
+                            : 'Current Scan'),
                   ],
                 ),
                 Column(
@@ -389,14 +485,182 @@ class _ScanScreenState extends State<ScanScreen> {
         .toList();
   }
 
+  List<Widget> _buildRecentDeviceTiles(BuildContext context) {
+    if (_recentDevices.isEmpty) return [];
+
+    final List<Widget> tiles = [];
+
+    // Add header for recent devices section
+    tiles.add(
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.history,
+              color: Colors.grey[600],
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _scanResults.isNotEmpty
+                  ? 'Recent Background Devices (${_recentDevices.length})'
+                  : 'Background Scan Results (${_recentDevices.length})',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Add device tiles
+    tiles.addAll(_recentDevices.map((device) {
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        child: ListTile(
+          leading: Icon(
+            device.isConnectable ? Icons.bluetooth : Icons.bluetooth_disabled,
+            color: device.isConnectable ? Colors.blue : Colors.grey,
+          ),
+          title: Text(
+            device.deviceName.isNotEmpty ? device.deviceName : 'Unknown Device',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('MAC: ${device.macAddress}'),
+              Text('RSSI: ${device.rssi} dBm'),
+              Text('Found: ${_formatTimestamp(device.timestamp)}'),
+            ],
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.wifi,
+                color: device.rssi > -50
+                    ? Colors.green
+                    : device.rssi > -70
+                        ? Colors.orange
+                        : Colors.red,
+              ),
+              Text(
+                '${device.rssi}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: device.rssi > -50
+                      ? Colors.green
+                      : device.rssi > -70
+                          ? Colors.orange
+                          : Colors.red,
+                ),
+              ),
+            ],
+          ),
+          onTap: () {
+            // Show device details
+            Snackbar.show(ABC.b,
+                'Background scan device: ${device.deviceName.isNotEmpty ? device.deviceName : device.macAddress}',
+                success: true);
+          },
+        ),
+      );
+    }).toList());
+
+    return tiles;
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return '${difference.inHours}h ago';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldMessenger(
       key: Snackbar.snackBarKeyB,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Blufie Scanner'),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Flexible(
+                child: Text(
+                  'Blufie Scanner',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Active scanning indicator
+              if (_isScanning || _continuousScanning)
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _isScanning ? Colors.blue : Colors.green,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          _isScanning ? 'Scanning...' : 'Auto Scan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _isScanning ? Colors.blue : Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           actions: [
+            // Scanning status icon in the app bar
+            if (_isScanning || _continuousScanning)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    child: Icon(
+                      _isScanning ? Icons.radar : Icons.refresh,
+                      color: _isScanning ? Colors.blue : Colors.green,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () {
+                    // Show scanning status info
+                    final String message = _isScanning
+                        ? 'Active scan in progress...'
+                        : 'Continuous scanning enabled';
+                    Snackbar.show(ABC.b, message, success: true);
+                  },
+                  tooltip: _isScanning ? 'Active Scan' : 'Continuous Scan',
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.battery_std),
               onPressed: () {
@@ -438,6 +702,7 @@ class _ScanScreenState extends State<ScanScreen> {
               _buildStatsCard(),
               ..._buildSystemDeviceTiles(context),
               ..._buildScanResultTiles(context),
+              ..._buildRecentDeviceTiles(context),
             ],
           ),
         ),

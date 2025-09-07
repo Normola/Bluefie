@@ -1,5 +1,13 @@
 # Testing Configuration for Blufie
 
+## Coverage Requirements
+**Minimum unit test coverage: 80%** - All code changes must maintain or improve overall test coverage.
+
+Use the following command to check current coverage:
+```bash
+flutter test --coverage
+```
+
 ## Test Structure
 
 ```
@@ -186,10 +194,20 @@ This will generate mock files in `test/mocks/` based on the annotations in `test
 
 ## Coverage Goals
 
-- **Unit Tests**: >90% code coverage
+**🎯 MINIMUM REQUIREMENT: 80% Unit Test Coverage**
+
+All code changes must maintain or improve overall test coverage:
+
+- **Unit Tests**: ≥80% code coverage (REQUIRED)
 - **Critical Paths**: 100% coverage (settings, database, scanning)
 - **Widget Tests**: All user-facing components
 - **Integration Tests**: Key user workflows
+
+### Coverage Enforcement
+- PRs will be rejected if they reduce coverage below 80%
+- New features must include comprehensive unit tests
+- Refactoring must maintain existing coverage levels
+- Use `flutter test --coverage` to verify before committing
 
 ## Continuous Integration
 

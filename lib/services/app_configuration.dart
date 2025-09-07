@@ -53,7 +53,13 @@ class AppConfiguration implements AppConfigurationInterface {
 
   void dispose() {
     AppLifecycleService().dispose();
-    log.info('🔄 App services disposed');
+
+    // Only log if the logging service has been initialized
+    try {
+      log.info('🔄 App services disposed');
+    } catch (e) {
+      // Logging service not initialized, ignore
+    }
   }
 }
 

@@ -24,7 +24,8 @@ void main() {
       expect(settings.autoScanWhenPluggedIn, false);
       expect(settings.scanIntervalSeconds, 30);
       expect(settings.locationTrackingEnabled, true);
-      expect(settings.batteryOptimizationEnabled, true);
+      expect(settings.batteryOptimizationEnabled,
+          false); // Default is false for background scanning
       expect(settings.batteryThresholdPercent, 20);
       expect(settings.verboseLoggingEnabled, false);
       expect(settings.showNotifications, true);

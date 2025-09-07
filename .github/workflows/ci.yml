@@ -119,6 +119,7 @@ jobs:
     name: Build Validation
     runs-on: ubuntu-latest
     # Run completely independently - no dependencies
+    # Validates APK sizes to ensure app doesn't grow too large
     if: github.event_name == 'pull_request'
 
     steps:
@@ -140,43 +141,60 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Build profile APK for validation
-        run: flutter build apk --profile
+      - name: Build release APK for validation
+        run: flutter build apk --release
 
-      - name: Validate APK size (Profile/Release only)
+      - name: Validate APK size (Release APK)
         run: |
-          APK_SIZE=$(stat -c%s "build/app/outputs/flutter-apk/app-profile.apk")
+          APK_SIZE=$(stat -c%s "build/app/outputs/flutter-apk/app-release.apk")
           APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1024 / 1024" | bc)
-          echo "Profile APK Size: ${APK_SIZE_MB} MB"
+          echo "Release APK Size: ${APK_SIZE_MB} MB"
 
-          # Only validate size for profile/release builds (not debug)
-          # Debug APKs are larger due to debug symbols and are not size-critical
+          # Fail if release APK is larger than 50MB
+          # Release APKs should be much smaller than this limit
           if (( $(echo "$APK_SIZE_MB > 50" | bc -l) )); then
-            echo "❌ Profile APK size ($APK_SIZE_MB MB) exceeds 50MB limit"
-            echo "Note: Debug APKs are not subject to size validation"
+            echo "❌ Release APK size ($APK_SIZE_MB MB) exceeds 50MB limit"
+            echo "This indicates a serious bloat issue in the production build"
             exit 1
           else
-            echo "✅ Profile APK size is within acceptable limits"
-            echo "Note: Debug APKs are not subject to size validation"
+            echo "✅ Release APK size is within acceptable limits"
           fi
 
-      - name: Comment APK size on PR
+      - name: Build profile APK for performance testing
+        run: flutter build apk --profile
+
+      - name: Report profile APK size (informational)
+        run: |
+          PROFILE_APK_SIZE=$(stat -c%s "build/app/outputs/flutter-apk/app-profile.apk")
+          PROFILE_APK_SIZE_MB=$(echo "scale=2; $PROFILE_APK_SIZE / 1024 / 1024" | bc)
+          echo "Profile APK Size: ${PROFILE_APK_SIZE_MB} MB (includes debug symbols)"
+          echo "Note: Profile APKs are larger than release APKs due to debugging features"
+
+      - name: Comment APK sizes on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const path = 'build/app/outputs/flutter-apk/app-profile.apk';
-            const stats = fs.statSync(path);
-            const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+
+            // Get release APK size
+            const releasePath = 'build/app/outputs/flutter-apk/app-release.apk';
+            const releaseStats = fs.statSync(releasePath);
+            const releaseSizeInMB = (releaseStats.size / (1024 * 1024)).toFixed(2);
+
+            // Get profile APK size
+            const profilePath = 'build/app/outputs/flutter-apk/app-profile.apk';
+            const profileStats = fs.statSync(profilePath);
+            const profileSizeInMB = (profileStats.size / (1024 * 1024)).toFixed(2);
 
             const comment = `## 📱 APK Build Report
 
-            **Profile APK Size**: ${fileSizeInMB} MB
+            **Release APK Size**: ${releaseSizeInMB} MB ✅
+            **Profile APK Size**: ${profileSizeInMB} MB (includes debug symbols)
 
-            ℹ️ *Note: Debug APKs are larger and not subject to size validation*
+            Build completed successfully! The release APK (what users download) is ${releaseSizeInMB} MB.
 
-            Build completed successfully! ✅`;
+            _Profile APKs are larger because they include debugging features and symbols for performance testing._`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

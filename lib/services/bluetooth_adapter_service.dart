@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+import '../services/logging_service.dart';
+
 /// Abstract interface for Bluetooth adapter operations
 /// This allows us to mock Bluetooth functionality in tests
 abstract class BluetoothAdapterInterface {
@@ -32,7 +34,13 @@ class FlutterBluePlusAdapter implements BluetoothAdapterInterface {
 
   @override
   void setLogLevel(LogLevel level) {
-    FlutterBluePlus.setLogLevel(level);
+    FlutterBluePlus.setLogLevel(level).onError(handleBluetoothError);
+  }
+
+  FutureOr<void> handleBluetoothError(Object error, StackTrace stackTrace) {
+    // In test or unsupported environments, flutter_blue_plus may throw exceptions
+    // We can safely ignore these since logging level is not critical functionality
+    LoggingService().warning('Unable to set bluetooth log level: $error');
   }
 }
 

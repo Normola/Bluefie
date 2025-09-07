@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import 'battery_service.dart';
 import 'bluetooth_scanning_service.dart';
 import 'settings_service.dart';
 
@@ -85,22 +86,53 @@ class AppLifecycleService with WidgetsBindingObserver {
   void _handleAppPaused() {
     debugPrint('App entering background - adjusting services');
 
-    // Remember scanning state - check if continuous timer is active
-    _wasAutoScanningBeforeBackground = _scanningService.isScanning;
+    // Remember scanning state - check if continuous scanning service is active
+    _wasAutoScanningBeforeBackground = _scanningService.isServiceRunning;
+
+    debugPrint(
+        'Background transition: isServiceRunning=${_scanningService.isServiceRunning}, '
+        'isScanning=${_scanningService.isScanning}, '
+        'wasAutoScanningBefore=$_wasAutoScanningBeforeBackground');
 
     final settings = _settingsService.currentSettings;
 
-    if (!_wasAutoScanningBeforeBackground) return;
-
-    if (settings.batteryOptimizationEnabled) {
+    if (!_wasAutoScanningBeforeBackground) {
       debugPrint(
-          'Stopping scanning for background (battery optimization enabled)');
+          'No scanning service was active before background - no action needed');
+      return;
+    }
+
+    // Check if background scanning is disabled in settings
+    if (!settings.backgroundScanningEnabled) {
+      debugPrint(
+          'Stopping scanning for background (background scanning disabled)');
       _scanningService.stopContinuousScanning();
       return;
     }
 
-    debugPrint(
-        'Continuing background scanning (battery optimization disabled)');
+    // Check battery optimization settings with smart logic
+    if (settings.batteryOptimizationEnabled) {
+      // Get current battery status
+      final batteryService = BatteryService();
+      final isCharging = batteryService.isCharging;
+      final batteryLevel = batteryService.currentBatteryLevel;
+      final batteryThreshold = settings.batteryThresholdPercent;
+
+      // Allow background scanning if device is charging OR battery is above threshold
+      if (isCharging) {
+        debugPrint('Continuing background scanning (device is charging)');
+      } else if (batteryLevel > batteryThreshold) {
+        debugPrint(
+            'Continuing background scanning (battery level $batteryLevel% > threshold $batteryThreshold%)');
+      } else {
+        debugPrint(
+            'Stopping scanning for background (battery optimization enabled, level: $batteryLevel%, charging: $isCharging)');
+        _scanningService.stopContinuousScanning();
+        return;
+      }
+    }
+
+    debugPrint('Continuing background scanning (background scanning enabled)');
     // Note: Future enhancement could implement reduced frequency scanning
   }
 

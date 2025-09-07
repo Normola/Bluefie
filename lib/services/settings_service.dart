@@ -61,6 +61,38 @@ class SettingsService {
     await _saveSettings();
   }
 
+  /// Enable background scanning by disabling battery optimization
+  Future<void> enableBackgroundScanning() async {
+    final newSettings = _currentSettings.copyWith(
+      backgroundScanningEnabled: true,
+      batteryOptimizationEnabled: false,
+    );
+    await updateSettings(newSettings);
+    log.info('Background scanning enabled - battery optimization disabled');
+  }
+
+  /// Disable background scanning to preserve battery
+  Future<void> disableBackgroundScanning() async {
+    final newSettings = _currentSettings.copyWith(
+      backgroundScanningEnabled: false,
+      batteryOptimizationEnabled: true,
+    );
+    await updateSettings(newSettings);
+    log.info('Background scanning disabled - battery optimization enabled');
+  }
+
+  /// Enable smart background scanning (allows scanning when charging or sufficient battery)
+  Future<void> enableSmartBackgroundScanning() async {
+    final newSettings = _currentSettings.copyWith(
+      backgroundScanningEnabled: true,
+      batteryOptimizationEnabled:
+          true, // Keep optimization but allow smart logic
+    );
+    await updateSettings(newSettings);
+    log.info(
+        'Smart background scanning enabled - will continue when charging or sufficient battery');
+  }
+
   Future<void> updateAutoScanning(bool enabled) async {
     final newSettings = _currentSettings.copyWith(autoScanningEnabled: enabled);
     await updateSettings(newSettings);

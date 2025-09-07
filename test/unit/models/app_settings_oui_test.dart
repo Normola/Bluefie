@@ -49,7 +49,7 @@ void main() {
 
       test('should update OUI database last updated via copyWith', () {
         const original = AppSettings();
-        final testDate = DateTime(2023, 9, 1);
+        final testDate = DateTime(2023, 9);
 
         final updated = original.copyWith(ouiDatabaseLastUpdated: testDate);
 
@@ -60,7 +60,7 @@ void main() {
 
       test('should handle copyWith with both OUI fields', () {
         const original = AppSettings();
-        final testDate = DateTime(2023, 9, 1);
+        final testDate = DateTime(2023, 9);
 
         final updated = original.copyWith(
           ouiDatabaseEnabled: true,
@@ -72,12 +72,12 @@ void main() {
       });
 
       test('should handle copyWith with null values correctly', () {
-        final testDate = DateTime(2023, 9, 1);
+        final testDate = DateTime(2023, 9);
         final original = AppSettings(ouiDatabaseLastUpdated: testDate);
 
         // Note: Due to copyWith implementation, passing null doesn't clear the value
         // This is expected behavior based on the current implementation
-        final updated = original.copyWith(ouiDatabaseLastUpdated: null);
+        final updated = original.copyWith();
 
         expect(original.ouiDatabaseLastUpdated, testDate);
         // This will still be the original value due to null coalescing
@@ -157,7 +157,7 @@ void main() {
       });
 
       test('should have consistent equality comparison', () {
-        final testDate = DateTime(2023, 9, 1);
+        final testDate = DateTime(2023, 9);
 
         final settings1 = AppSettings(
           ouiDatabaseEnabled: true,
@@ -181,7 +181,7 @@ void main() {
       });
 
       test('should not be equal when OUI fields differ', () {
-        final testDate1 = DateTime(2023, 9, 1);
+        final testDate1 = DateTime(2023, 9);
         final testDate2 = DateTime(2023, 9, 2);
 
         final settings1 = AppSettings(
@@ -190,7 +190,6 @@ void main() {
         );
 
         final settings2 = AppSettings(
-          ouiDatabaseEnabled: false,
           ouiDatabaseLastUpdated: testDate2,
         );
 

@@ -21,7 +21,7 @@ void main() {
               builder: (context) {
                 return Column(
                   children: [
-                    Text('OUI Service Test'),
+                    const Text('OUI Service Test'),
                     Text('Database Size: ${ouiService.databaseSize}'),
                     Text('Is Loaded: ${ouiService.isLoaded}'),
                     Text('Is Downloading: ${ouiService.isDownloading}'),
@@ -98,11 +98,11 @@ void main() {
           home: Scaffold(
             body: Builder(
               builder: (context) {
-                final testMac = '00:11:22:33:44:55';
+                const testMac = '00:11:22:33:44:55';
                 final manufacturer = ouiService.getManufacturer(testMac);
                 return Column(
                   children: [
-                    Text('Test MAC: $testMac'),
+                    const Text('Test MAC: $testMac'),
                     Text('Manufacturer: ${manufacturer ?? 'Unknown'}'),
                   ],
                 );

@@ -23,9 +23,6 @@ class _ScanResultTileState extends State<ScanResultTile> {
   late StreamSubscription<BluetoothConnectionState>
       _connectionStateSubscription;
 
-  final OuiService _ouiService = OuiService();
-  final SettingsService _settingsService = SettingsService();
-
   @override
   void initState() {
     super.initState();
@@ -114,13 +111,16 @@ class _ScanResultTileState extends State<ScanResultTile> {
   }
 
   String? _getManufacturerInfo() {
-    if (!_settingsService.currentSettings.ouiDatabaseEnabled ||
-        !_ouiService.isLoaded) {
+    final settingsService = SettingsService();
+    final ouiService = OuiService();
+
+    if (!settingsService.currentSettings.ouiDatabaseEnabled ||
+        !ouiService.isLoaded) {
       return null;
     }
 
     final macAddress = widget.result.device.remoteId.str;
-    return _ouiService.getManufacturer(macAddress);
+    return ouiService.getManufacturer(macAddress);
   }
 
   Widget _buildConnectButton(BuildContext context) {

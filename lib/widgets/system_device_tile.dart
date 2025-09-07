@@ -29,9 +29,6 @@ class _SystemDeviceTileState extends State<SystemDeviceTile> {
   late StreamSubscription<BluetoothConnectionState>
       _connectionStateSubscription;
 
-  final OuiService _ouiService = OuiService();
-  final SettingsService _settingsService = SettingsService();
-
   @override
   void initState() {
     super.initState();
@@ -83,12 +80,15 @@ class _SystemDeviceTileState extends State<SystemDeviceTile> {
   }
 
   String? _getManufacturerInfo() {
-    if (!_settingsService.currentSettings.ouiDatabaseEnabled ||
-        !_ouiService.isLoaded) {
+    final settingsService = SettingsService();
+    final ouiService = OuiService();
+
+    if (!settingsService.currentSettings.ouiDatabaseEnabled ||
+        !ouiService.isLoaded) {
       return null;
     }
 
     final macAddress = widget.device.remoteId.str;
-    return _ouiService.getManufacturer(macAddress);
+    return ouiService.getManufacturer(macAddress);
   }
 }

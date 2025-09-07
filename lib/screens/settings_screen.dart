@@ -18,13 +18,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final SettingsService _settingsService = SettingsService();
-  final BatteryService _batteryService = BatteryService();
-  final BluetoothScanningService _scanningService = BluetoothScanningService();
-  final DataExportService _exportService = DataExportService();
-  final AppLifecycleService _lifecycleService = AppLifecycleService();
-  final OuiService _ouiService = OuiService();
-
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
   String _batteryStatusText = '';
@@ -45,17 +38,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _setupStreams();
   }
 
-  void _initializeData() {
-    _settings = _settingsService.currentSettings;
-    _currentBatteryLevel = _batteryService.currentBatteryLevel;
-    _batteryStatusText = _batteryService.getBatteryStatusText();
-    _currentLifecycleState = _lifecycleService.currentState;
-    _initializeOuiService();
+  Future<void> _initializeData() async {
+    final settingsService = SettingsService();
+    final batteryService = BatteryService();
+    final lifecycleService = AppLifecycleService();
+
+    _settings = settingsService.currentSettings;
+    _currentBatteryLevel = batteryService.currentBatteryLevel;
+    _batteryStatusText = batteryService.getBatteryStatusText();
+    _currentLifecycleState = lifecycleService.currentState;
+    await _initializeOuiService();
   }
 
-  void _initializeOuiService() async {
-    await _ouiService.initialize();
-    final lastUpdated = await _ouiService.getLastUpdateTime();
+  Future<void> _initializeOuiService() async {
+    final ouiService = OuiService();
+    await ouiService.initialize();
+    final lastUpdated = await ouiService.getLastUpdateTime();
     if (mounted) {
       setState(() {
         _ouiLastUpdated = lastUpdated;
@@ -64,7 +62,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _setupStreams() {
-    _settingsSubscription = _settingsService.settingsStream.listen((settings) {
+    final settingsService = SettingsService();
+    final batteryService = BatteryService();
+    final lifecycleService = AppLifecycleService();
+    final ouiService = OuiService();
+
+    _settingsSubscription = settingsService.settingsStream.listen((settings) {
       if (!mounted) return;
 
       setState(() {
@@ -73,16 +76,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     _batteryLevelSubscription =
-        _batteryService.batteryLevelStream.listen((level) {
+        batteryService.batteryLevelStream.listen((level) {
       if (!mounted) return;
 
       setState(() {
         _currentBatteryLevel = level;
-        _batteryStatusText = _batteryService.getBatteryStatusText();
+        _batteryStatusText = batteryService.getBatteryStatusText();
       });
     });
 
-    _lifecycleSubscription = _lifecycleService.lifecycleStream.listen((state) {
+    _lifecycleSubscription = lifecycleService.lifecycleStream.listen((state) {
       if (!mounted) return;
 
       setState(() {
@@ -91,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     _ouiDownloadSubscription =
-        _ouiService.downloadProgressStream.listen((progress) {
+        ouiService.downloadProgressStream.listen((progress) {
       if (!mounted) return;
 
       setState(() {
@@ -118,8 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _initializeData();
+            onPressed: () async {
+              await _initializeData();
               setState(() {});
             },
           ),
@@ -230,6 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildBatteryStatusCard() {
+    final batteryService = BatteryService();
     final Color batteryColor = _currentBatteryLevel > 50
         ? Colors.green
         : _currentBatteryLevel > 20
@@ -265,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    if (_batteryService.isLowBattery)
+                    if (batteryService.isLowBattery)
                       Text(
                         'Low battery mode active',
                         style: TextStyle(color: Colors.red[600]),
@@ -299,13 +303,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Manual scanning only'),
               value: _settings.autoScanningEnabled,
               onChanged: (value) async {
-                await _settingsService.updateAutoScanning(value);
+                final settingsService = SettingsService();
+                final scanningService = BluetoothScanningService();
+
+                await settingsService.updateAutoScanning(value);
                 if (value) {
-                  _scanningService.startContinuousScanning();
+                  scanningService.startContinuousScanning();
                   return;
                 }
 
-                _scanningService.stopContinuousScanning();
+                scanningService.stopContinuousScanning();
               },
             ),
             const Divider(),
@@ -316,7 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Manual control only'),
               value: _settings.autoScanWhenPluggedIn,
               onChanged: (value) async {
-                await _settingsService.updateAutoScanWhenPluggedIn(value);
+                await SettingsService().updateAutoScanWhenPluggedIn(value);
               },
             ),
             const Divider(),
@@ -332,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Record GPS coordinates with discoveries'),
               value: _settings.locationTrackingEnabled,
               onChanged: (value) {
-                _settingsService.updateLocationTracking(value);
+                SettingsService().updateLocationTracking(value);
               },
             ),
           ],
@@ -360,7 +367,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : 'Continue scanning regardless of battery'),
               value: _settings.batteryOptimizationEnabled,
               onChanged: (value) {
-                _settingsService.updateBatteryOptimization(value, null);
+                SettingsService().updateBatteryOptimization(value, null);
               },
             ),
             if (_settings.batteryOptimizationEnabled) ...[
@@ -402,7 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Enable detailed debug output'),
               value: _settings.verboseLoggingEnabled,
               onChanged: (value) {
-                _settingsService.updateVerboseLogging(value);
+                SettingsService().updateVerboseLogging(value);
               },
             ),
             const Divider(),
@@ -411,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('Show scanning status notifications'),
               value: _settings.showNotifications,
               onChanged: (value) {
-                _settingsService.updateNotifications(value);
+                SettingsService().updateNotifications(value);
               },
             ),
           ],
@@ -438,7 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Text('Display device manufacturer from MAC address'),
               value: _settings.ouiDatabaseEnabled,
               onChanged: (value) {
-                _settingsService.updateOuiDatabaseEnabled(value);
+                SettingsService().updateOuiDatabaseEnabled(value);
               },
             ),
             if (_settings.ouiDatabaseEnabled) ...[
@@ -454,6 +461,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildOuiDatabaseStatus() {
+    final ouiService = OuiService();
+
     if (_isDownloadingOui) {
       return Column(
         children: [
@@ -480,15 +489,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           children: [
             Icon(
-              _ouiService.isLoaded ? Icons.check_circle : Icons.info,
-              color: _ouiService.isLoaded ? Colors.green : Colors.orange,
+              ouiService.isLoaded ? Icons.check_circle : Icons.info,
+              color: ouiService.isLoaded ? Colors.green : Colors.orange,
               size: 20,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                _ouiService.isLoaded
-                    ? 'Database loaded (${_ouiService.databaseSize} manufacturers)'
+                ouiService.isLoaded
+                    ? 'Database loaded (${ouiService.databaseSize} manufacturers)'
                     : 'Database not downloaded',
               ),
             ),
@@ -511,6 +520,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildOuiDatabaseActions() {
+    final ouiService = OuiService();
+
     return Row(
       children: [
         Expanded(
@@ -518,10 +529,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: _isDownloadingOui ? null : _downloadOuiDatabase,
             icon: const Icon(Icons.download),
             label: Text(
-                _ouiService.isLoaded ? 'Update Database' : 'Download Database'),
+                ouiService.isLoaded ? 'Update Database' : 'Download Database'),
           ),
         ),
-        if (_ouiService.isLoaded) ...[
+        if (ouiService.isLoaded) ...[
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: _isDownloadingOui ? null : _deleteOuiDatabase,
@@ -541,24 +552,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _downloadOuiDatabase() async {
+    final ouiService = OuiService();
+    final settingsService = SettingsService();
+
     setState(() {
       _isDownloadingOui = true;
     });
 
-    final success = await _ouiService.downloadDatabase(forceUpdate: true);
+    final success = await ouiService.downloadDatabase(forceUpdate: true);
 
     if (mounted) {
       setState(() {
         _isDownloadingOui = false;
       });
 
-      final lastUpdated = await _ouiService.getLastUpdateTime();
+      final lastUpdated = await ouiService.getLastUpdateTime();
       setState(() {
         _ouiLastUpdated = lastUpdated;
       });
 
       if (success) {
-        await _settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
+        await settingsService.updateOuiDatabaseLastUpdated(lastUpdated);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -581,6 +595,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _deleteOuiDatabase() async {
+    final ouiService = OuiService();
+    final settingsService = SettingsService();
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -601,13 +618,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirm == true) {
-      final success = await _ouiService.deleteDatabase();
+      final success = await ouiService.deleteDatabase();
       if (mounted) {
         setState(() {
           _ouiLastUpdated = null;
         });
 
-        await _settingsService.updateOuiDatabaseLastUpdated(null);
+        await settingsService.updateOuiDatabaseLastUpdated(null);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -695,7 +712,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateScanInterval(currentInterval);
+                SettingsService().updateScanInterval(currentInterval);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -743,8 +760,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateBatteryOptimization(
-                    true, currentThreshold);
+                SettingsService()
+                    .updateBatteryOptimization(true, currentThreshold);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -796,7 +813,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () {
-                _settingsService.updateDataRetention(currentRetention);
+                SettingsService().updateDataRetention(currentRetention);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -821,7 +838,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () {
-              _settingsService.resetToDefaults();
+              SettingsService().resetToDefaults();
               Navigator.of(context).pop();
             },
             child: const Text('Reset'),
@@ -867,6 +884,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _performDataExport() async {
+    final exportService = DataExportService();
+
     try {
       // Show loading dialog
       showDialog(
@@ -884,7 +903,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       // Perform the export
-      final String? filePath = await _exportService.exportAllDataToJson();
+      final String? filePath = await exportService.exportAllDataToJson();
 
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
@@ -925,7 +944,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 try {
-                  await _exportService.shareExportedFile(filePath);
+                  await exportService.shareExportedFile(filePath);
                 } catch (e) {
                   if (mounted) {
                     messenger.showSnackBar(

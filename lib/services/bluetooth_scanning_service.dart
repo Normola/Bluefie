@@ -169,7 +169,7 @@ class BluetoothScanningService {
     }
   }
 
-  void _processScanResults(List<ScanResult> results) async {
+  Future<void> _processScanResults(List<ScanResult> results) async {
     final settings = _settingsService.currentSettings;
     Position? currentLocation;
 

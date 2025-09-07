@@ -727,9 +727,7 @@ class _BatteryMonitorScreenState extends State<BatteryMonitorScreen>
     // Update animation state
     if (_isScanning && !_scanningAnimationController.isAnimating) {
       _scanningAnimationController.repeat();
-    }
-
-    if (!_isScanning && _scanningAnimationController.isAnimating) {
+    } else if (!_isScanning && _scanningAnimationController.isAnimating) {
       _scanningAnimationController.stop();
     }
 

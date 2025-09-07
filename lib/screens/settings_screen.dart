@@ -9,6 +9,7 @@ import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
 import '../services/oui_service.dart';
 import '../services/settings_service.dart';
+import '../services/watch_list_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -156,6 +157,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAdvancedSettingsCard(),
           const SizedBox(height: 16),
           _buildOuiDatabaseCard(),
+          const SizedBox(height: 16),
+          _buildWatchListCard(),
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
@@ -647,6 +650,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildWatchListCard() {
+    final watchListService = WatchListService();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Device Watch List',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Enable Watch List'),
+              subtitle: const Text(
+                  'Monitor specific devices and get alerts when they re-appear'),
+              value: _settings.watchListEnabled,
+              onChanged: (value) async {
+                await watchListService.setWatchListEnabled(value);
+              },
+            ),
+            if (_settings.watchListEnabled) ...[
+              SwitchListTile(
+                title: const Text('Audio Alerts'),
+                subtitle: const Text(
+                    'Play sound when watched devices are re-detected'),
+                value: _settings.watchListAudioAlertsEnabled,
+                onChanged: (value) async {
+                  await watchListService.setAudioAlertsEnabled(value);
+                },
+              ),
+              ListTile(
+                title: const Text('Watched Devices'),
+                subtitle: Text(
+                    '${_settings.watchListDevices.length} devices in watch list'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  _showWatchListManagement();
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showWatchListManagement() {
+    showDialog(
+      context: context,
+      builder: (context) => _WatchListDialog(
+        currentDevices: _settings.watchListDevices,
+        onDevicesChanged: () {
+          // Refresh settings when devices are modified
+          setState(() {
+            _settings = SettingsService().currentSettings;
+          });
+        },
+      ),
+    );
+  }
+
   Widget _buildDataManagementCard() {
     return Card(
       child: Padding(
@@ -990,5 +1057,148 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Export error: $e')),
     );
+  }
+}
+
+class _WatchListDialog extends StatefulWidget {
+  final List<String> currentDevices;
+  final VoidCallback onDevicesChanged;
+
+  const _WatchListDialog({
+    required this.currentDevices,
+    required this.onDevicesChanged,
+  });
+
+  @override
+  State<_WatchListDialog> createState() => _WatchListDialogState();
+}
+
+class _WatchListDialogState extends State<_WatchListDialog> {
+  final TextEditingController _macController = TextEditingController();
+  final WatchListService _watchListService = WatchListService();
+  List<String> _devices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _devices = List.from(widget.currentDevices);
+  }
+
+  @override
+  void dispose() {
+    _macController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Manage Watch List'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _macController,
+              decoration: const InputDecoration(
+                labelText: 'MAC Address',
+                hintText: 'XX:XX:XX:XX:XX:XX',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _addDevice(),
+            ),
+            const SizedBox(height: 16),
+            if (_devices.isNotEmpty) ...[
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Watched Devices:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _devices.length,
+                  itemBuilder: (context, index) {
+                    final macAddress = _devices[index];
+                    return ListTile(
+                      title: Text(macAddress),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => _removeDevice(macAddress),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ] else
+              const Text('No devices in watch list'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _addDevice,
+          child: const Text('Add Device'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addDevice() async {
+    final macAddress = _macController.text.trim();
+    if (macAddress.isEmpty) return;
+
+    // Basic MAC address validation
+    final macRegex = RegExp(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$');
+    if (!macRegex.hasMatch(macAddress)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid MAC address (XX:XX:XX:XX:XX:XX)'),
+        ),
+      );
+      return;
+    }
+
+    final success = await _watchListService.addDeviceToWatchList(macAddress);
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _devices.add(macAddress);
+        _macController.clear();
+      });
+      widget.onDevicesChanged();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added $macAddress to watch list')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Device already in watch list')),
+      );
+    }
+  }
+
+  Future<void> _removeDevice(String macAddress) async {
+    final success =
+        await _watchListService.removeDeviceFromWatchList(macAddress);
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _devices.remove(macAddress);
+      });
+      widget.onDevicesChanged();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removed $macAddress from watch list')),
+      );
+    }
   }
 }

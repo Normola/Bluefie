@@ -11,6 +11,7 @@ import '../services/database_helper.dart';
 import '../services/location_service.dart';
 import '../services/logging_service.dart';
 import '../services/settings_service.dart';
+import '../services/watch_list_service.dart';
 
 class BluetoothScanningService {
   static final BluetoothScanningService _instance =
@@ -22,6 +23,7 @@ class BluetoothScanningService {
   final LocationService _locationService = LocationService();
   final SettingsService _settingsService = SettingsService();
   final BatteryService _batteryService = BatteryService();
+  final WatchListService _watchListService = WatchListService();
 
   StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
   StreamSubscription<bool>? _isScanningSubscription;
@@ -226,6 +228,10 @@ class BluetoothScanningService {
         final int insertId = await _databaseHelper.insertDevice(record);
         if (insertId > 0) {
           newRecords.add(record);
+
+          // Process for watch list
+          await _watchListService.processDetectedDevice(record);
+
           final settings = _settingsService.currentSettings;
           if (settings.verboseLoggingEnabled) {
             log.info(
@@ -239,6 +245,11 @@ class BluetoothScanningService {
 
     if (newRecords.isNotEmpty) {
       await _updateStreams();
+
+      // Check for devices that have left detection range for watch list
+      final currentMacAddresses =
+          results.map((result) => result.device.remoteId.toString()).toList();
+      await _watchListService.checkForMissingDevices(currentMacAddresses);
     }
   }
 

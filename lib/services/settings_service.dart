@@ -152,6 +152,17 @@ class SettingsService {
     await updateSettings(newSettings);
   }
 
+  Future<void> updateSigDatabaseEnabled(bool enabled) async {
+    final newSettings = _currentSettings.copyWith(sigDatabaseEnabled: enabled);
+    await updateSettings(newSettings);
+  }
+
+  Future<void> updateSigDatabaseLastUpdated(DateTime? lastUpdated) async {
+    final newSettings =
+        _currentSettings.copyWith(sigDatabaseLastUpdated: lastUpdated);
+    await updateSettings(newSettings);
+  }
+
   Future<void> resetToDefaults() async {
     await updateSettings(const AppSettings());
   }

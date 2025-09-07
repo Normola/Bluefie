@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -141,6 +142,43 @@ class DatabaseHelper {
     final result = await db.rawQuery(
         'SELECT COUNT(DISTINCT macAddress) as count FROM bluetooth_devices');
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// Get the database file size in bytes
+  Future<int> getDatabaseSize() async {
+    try {
+      final String path =
+          join(await getDatabasesPath(), 'bluetooth_devices.db');
+      final file = File(path);
+      if (await file.exists()) {
+        return await file.length();
+      }
+      return 0;
+    } catch (e) {
+      LoggingService().error('Error getting database size: $e');
+      return 0;
+    }
+  }
+
+  /// Get the database file size as a formatted string (e.g., "1.2 MB")
+  Future<String> getFormattedDatabaseSize() async {
+    final sizeInBytes = await getDatabaseSize();
+    return _formatFileSize(sizeInBytes);
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes == 0) return '0 B';
+
+    const List<String> units = ['B', 'KB', 'MB', 'GB'];
+    int unitIndex = 0;
+    double size = bytes.toDouble();
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return '${size.toStringAsFixed(size >= 100 ? 0 : 1)} ${units[unitIndex]}';
   }
 
   Future<void> deleteOldRecords(DateTime beforeDate) async {

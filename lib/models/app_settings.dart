@@ -14,6 +14,8 @@ class AppSettings {
   final bool watchListEnabled;
   final bool watchListAudioAlertsEnabled;
   final List<String> watchListDevices;
+  final bool sigDatabaseEnabled;
+  final DateTime? sigDatabaseLastUpdated;
 
   const AppSettings({
     this.autoScanningEnabled = false,
@@ -32,6 +34,8 @@ class AppSettings {
     this.watchListEnabled = false,
     this.watchListAudioAlertsEnabled = true,
     this.watchListDevices = const [],
+    this.sigDatabaseEnabled = false,
+    this.sigDatabaseLastUpdated,
   });
 
   AppSettings copyWith({
@@ -50,6 +54,8 @@ class AppSettings {
     bool? watchListEnabled,
     bool? watchListAudioAlertsEnabled,
     List<String>? watchListDevices,
+    bool? sigDatabaseEnabled,
+    DateTime? sigDatabaseLastUpdated,
   }) {
     return AppSettings(
       autoScanningEnabled: autoScanningEnabled ?? this.autoScanningEnabled,
@@ -75,6 +81,9 @@ class AppSettings {
       watchListAudioAlertsEnabled:
           watchListAudioAlertsEnabled ?? this.watchListAudioAlertsEnabled,
       watchListDevices: watchListDevices ?? this.watchListDevices,
+      sigDatabaseEnabled: sigDatabaseEnabled ?? this.sigDatabaseEnabled,
+      sigDatabaseLastUpdated:
+          sigDatabaseLastUpdated ?? this.sigDatabaseLastUpdated,
     );
   }
 
@@ -95,6 +104,8 @@ class AppSettings {
       'watchListEnabled': watchListEnabled,
       'watchListAudioAlertsEnabled': watchListAudioAlertsEnabled,
       'watchListDevices': watchListDevices,
+      'sigDatabaseEnabled': sigDatabaseEnabled,
+      'sigDatabaseLastUpdated': sigDatabaseLastUpdated?.millisecondsSinceEpoch,
     };
   }
 
@@ -121,6 +132,13 @@ class AppSettings {
       watchListEnabled: json['watchListEnabled'] ?? false,
       watchListAudioAlertsEnabled: json['watchListAudioAlertsEnabled'] ?? true,
       watchListDevices: List<String>.from(json['watchListDevices'] ?? []),
+      sigDatabaseEnabled: json['sigDatabaseEnabled'] ?? false,
+      sigDatabaseLastUpdated: json['sigDatabaseLastUpdated'] != null
+          ? (json['sigDatabaseLastUpdated'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(
+                  json['sigDatabaseLastUpdated'])
+              : DateTime.parse(json['sigDatabaseLastUpdated']))
+          : null,
     );
   }
 

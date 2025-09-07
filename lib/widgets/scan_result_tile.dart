@@ -5,6 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../services/oui_service.dart';
 import '../services/settings_service.dart';
+import '../services/sig_service.dart';
 
 class ScanResultTile extends StatefulWidget {
   const ScanResultTile({super.key, required this.result, this.onTap});
@@ -26,6 +27,7 @@ class _ScanResultTileState extends State<ScanResultTile> {
   // Service instances - using singleton pattern
   final SettingsService _settingsService = SettingsService();
   final OuiService _ouiService = OuiService();
+  final SigService _sigService = SigService();
 
   @override
   void initState() {
@@ -62,7 +64,25 @@ class _ScanResultTileState extends State<ScanResultTile> {
   }
 
   String getNiceServiceUuids(List<Guid> serviceUuids) {
-    return serviceUuids.join(', ').toUpperCase();
+    if (!_settingsService.currentSettings.sigDatabaseEnabled ||
+        !_sigService.isLoaded) {
+      return serviceUuids.join(', ').toUpperCase();
+    }
+
+    final List<String> serviceNames = [];
+
+    for (final uuid in serviceUuids) {
+      final uuidString = uuid.toString();
+      final serviceName = _sigService.getServiceName(uuidString);
+
+      if (serviceName != null) {
+        serviceNames.add('$serviceName ($uuidString)');
+      } else {
+        serviceNames.add(uuidString.toUpperCase());
+      }
+    }
+
+    return serviceNames.join(', ');
   }
 
   bool get isConnected {

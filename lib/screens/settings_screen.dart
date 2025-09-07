@@ -7,8 +7,10 @@ import '../services/app_lifecycle_service.dart';
 import '../services/battery_service.dart';
 import '../services/bluetooth_scanning_service.dart';
 import '../services/data_export_service.dart';
+import '../services/database_helper.dart';
 import '../services/oui_service.dart';
 import '../services/settings_service.dart';
+import '../services/sig_service.dart';
 import '../services/watch_list_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,6 +23,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Service instances - using singleton pattern
   final OuiService _ouiService = OuiService();
+  final SigService _sigService = SigService();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   AppSettings _settings = const AppSettings();
   int _currentBatteryLevel = 100;
@@ -29,11 +33,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDownloadingOui = false;
   double _ouiDownloadProgress = 0.0;
   DateTime? _ouiLastUpdated;
+  bool _isDownloadingSig = false;
+  double _sigDownloadProgress = 0.0;
+  DateTime? _sigLastUpdated;
+
+  // Database information
+  int _totalDeviceRecords = 0;
+  int _uniqueDevices = 0;
+  String _databaseSize = '0 B';
 
   StreamSubscription<AppSettings>? _settingsSubscription;
   StreamSubscription<int>? _batteryLevelSubscription;
   StreamSubscription<AppLifecycleState>? _lifecycleSubscription;
   StreamSubscription<double>? _ouiDownloadSubscription;
+  StreamSubscription<double>? _sigDownloadSubscription;
 
   @override
   void initState() {
@@ -52,6 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _batteryStatusText = batteryService.getBatteryStatusText();
     _currentLifecycleState = lifecycleService.currentState;
     await _initializeOuiService();
+    await _initializeSigService();
+    await _initializeDatabaseInfo();
   }
 
   Future<void> _initializeOuiService() async {
@@ -62,6 +77,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _ouiLastUpdated = lastUpdated;
       });
     }
+  }
+
+  Future<void> _initializeSigService() async {
+    await _sigService.initialize();
+    final lastUpdated = await _sigService.getLastUpdateTime();
+    if (mounted) {
+      setState(() {
+        _sigLastUpdated = lastUpdated;
+      });
+    }
+  }
+
+  Future<void> _initializeDatabaseInfo() async {
+    try {
+      final totalRecords = await _databaseHelper.getDeviceCount();
+      final uniqueDevices = await _databaseHelper.getUniqueDeviceCount();
+      final databaseSize = await _databaseHelper.getFormattedDatabaseSize();
+
+      if (mounted) {
+        setState(() {
+          _totalDeviceRecords = totalRecords;
+          _uniqueDevices = uniqueDevices;
+          _databaseSize = databaseSize;
+        });
+      }
+    } catch (e) {
+      // Handle error silently - database info is not critical
+    }
+  }
+
+  /// Refresh database statistics after data changes
+  Future<void> _refreshDatabaseStats() async {
+    await _initializeDatabaseInfo();
   }
 
   void _setupStreams() {
@@ -104,6 +152,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _isDownloadingOui = progress < 1.0 && progress > 0.0;
       });
     });
+
+    _sigDownloadSubscription =
+        _sigService.downloadProgressStream.listen((progress) {
+      if (!mounted) return;
+
+      setState(() {
+        _sigDownloadProgress = progress;
+        _isDownloadingSig = progress < 1.0 && progress > 0.0;
+      });
+    });
   }
 
   @override
@@ -112,6 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _batteryLevelSubscription?.cancel();
     _lifecycleSubscription?.cancel();
     _ouiDownloadSubscription?.cancel();
+    _sigDownloadSubscription?.cancel();
     super.dispose();
   }
 
@@ -159,6 +218,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildOuiDatabaseCard(),
           const SizedBox(height: 16),
           _buildWatchListCard(),
+          const SizedBox(height: 16),
+          _buildSigDatabaseCard(),
           const SizedBox(height: 16),
           _buildDataManagementCard(),
         ],
@@ -714,6 +775,222 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildSigDatabaseCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bluetooth SIG Database',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Show Service & Characteristic Names'),
+              subtitle: const Text(
+                  'Display Bluetooth SIG assigned names for services and characteristics'),
+              value: _settings.sigDatabaseEnabled,
+              onChanged: (value) {
+                SettingsService().updateSigDatabaseEnabled(value);
+              },
+            ),
+            if (_settings.sigDatabaseEnabled) ...[
+              const Divider(),
+              _buildSigDatabaseStatus(),
+              const SizedBox(height: 12),
+              _buildSigDatabaseActions(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSigDatabaseStatus() {
+    if (_isDownloadingSig) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                  'Downloading SIG databases... ${(_sigDownloadProgress * 100).toInt()}%'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: _sigDownloadProgress),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              _sigService.isLoaded ? Icons.check_circle : Icons.info,
+              color: _sigService.isLoaded ? Colors.green : Colors.orange,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _sigService.isLoaded
+                    ? 'Databases loaded (Services: ${_sigService.servicesCount}, Characteristics: ${_sigService.characteristicsCount})'
+                    : 'SIG databases not downloaded',
+              ),
+            ),
+          ],
+        ),
+        if (_sigLastUpdated != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 32, top: 4),
+            child: Row(
+              children: [
+                Text(
+                  'Last updated: ${_formatDate(_sigLastUpdated!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSigDatabaseActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isDownloadingSig ? null : _downloadSigDatabase,
+            icon: const Icon(Icons.download),
+            label: Text(_sigService.isLoaded
+                ? 'Update Databases'
+                : 'Download Databases'),
+          ),
+        ),
+        if (_sigService.isLoaded) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isDownloadingSig ? null : _deleteSigDatabase,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _downloadSigDatabase() async {
+    final settingsService = SettingsService();
+
+    setState(() {
+      _isDownloadingSig = true;
+    });
+
+    final success = await _sigService.downloadDatabase(forceUpdate: true);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isDownloadingSig = false;
+    });
+
+    final lastUpdated = await _sigService.getLastUpdateTime();
+    setState(() {
+      _sigLastUpdated = lastUpdated;
+    });
+
+    if (success) {
+      await settingsService.updateSigDatabaseLastUpdated(lastUpdated);
+      _showSigDownloadSuccessMessage();
+      return;
+    }
+
+    _showSigDownloadFailureMessage();
+  }
+
+  void _showSigDownloadSuccessMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('SIG databases downloaded successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showSigDownloadFailureMessage() {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to download SIG databases'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _deleteSigDatabase() async {
+    final settingsService = SettingsService();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete SIG Databases'),
+        content: const Text(
+            'Are you sure you want to delete the Bluetooth SIG databases?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    final success = await _sigService.deleteDatabase();
+
+    setState(() {
+      _sigLastUpdated = null;
+    });
+
+    await settingsService.updateSigDatabaseLastUpdated(null);
+    _showSigDeleteResultMessage(success);
+  }
+
+  void _showSigDeleteResultMessage(bool success) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'SIG databases deleted successfully'
+            : 'Failed to delete SIG databases'),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
   Widget _buildDataManagementCard() {
     return Card(
       child: Padding(
@@ -726,6 +1003,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
+            // Database statistics
+            _buildDatabaseStats(),
+            const Divider(),
             ListTile(
               title: const Text('Data Retention'),
               subtitle:
@@ -743,6 +1023,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDatabaseStats() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.storage, color: Colors.blue),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Database Statistics',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Size: $_databaseSize',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Total Records',
+                _totalDeviceRecords.toString(),
+                Icons.list_alt,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard(
+                'Unique Devices',
+                _uniqueDevices.toString(),
+                Icons.devices,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -886,9 +1245,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 SettingsService().updateDataRetention(currentRetention);
                 Navigator.of(context).pop();
+                // Refresh database stats since data retention might have cleaned up old records
+                await _refreshDatabaseStats();
               },
               child: const Text('Save'),
             ),
@@ -975,6 +1336,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
 
       _showExportSuccessDialog(filePath, exportService);
+
+      // Refresh database stats after export (in case export includes cleanup operations)
+      await _refreshDatabaseStats();
     } catch (e) {
       _handleExportError(e);
     }
